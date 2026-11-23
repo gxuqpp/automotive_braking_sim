@@ -2,786 +2,623 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>汽车制动性能仿真工具·广西大学</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>汽车制动性能仿真工具 · 广西大学</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "微软雅黑", "Microsoft YaHei", sans-serif; background: var(--bg); color: #222; font-size: 14px; }
+.app-header { background: var(--header-bg); color: white; padding: 14px 20px; }
+.app-header h1 { font-size: 18px; font-weight: 700; }
+.app-header .sub { font-size: 12px; opacity: 0.85; margin-top: 4px; line-height: 1.6; }
+.result-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.result-table th { background: #e8eef8; padding: 8px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; color: var(--blue); }
+.result-table td { padding: 7px 10px; border: 1px solid var(--border); vertical-align: top; }
+.result-table tr:nth-child(even) td { background: #f8faff; }
+.info-box { background: #fffbea; border: 1px solid #f0d96a; border-radius: 5px; padding: 10px 14px; font-size: 12px; color: #5a4800; margin: 8px 0; }
 
-  :root {
-    --bg:        #080d18;
-    --panel:     #0e1525;
-    --border:    #1a2d48;
-    --accent:    #00d4ff;
-    --accent2:   #ff6b35;
-    --accent3:   #39ff14;
-    --text:      #ddeaf8;
-    --muted:     #5a7090;
-    --grid:      rgba(0,212,255,0.07);
-    --c1:        #00d4ff;
-    --c2:        #ff6b35;
-    --c3:        #39ff14;
-    --c4:        #ffd700;
-  }
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Noto Sans SC', sans-serif;
-    font-weight: 400;
-    min-height: 100vh;
-    overflow-x: hidden;
-    font-size: 16px;
-  }
-
-  /* ── Header ── */
-  header {
-    background: linear-gradient(135deg, #0a1828 0%, #080d18 70%);
-    border-bottom: 2px solid var(--border);
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    position: relative;
-    overflow: hidden;
-    flex-wrap: wrap;
-  }
-  header::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: repeating-linear-gradient(90deg,transparent,transparent 60px,rgba(0,212,255,.04) 60px,rgba(0,212,255,.04) 61px),
-                repeating-linear-gradient(0deg,transparent,transparent 60px,rgba(0,212,255,.04) 60px,rgba(0,212,255,.04) 61px);
-    pointer-events: none;
-  }
-  .logo-mark {
-    width: 52px; height: 52px;
-    border: 2px solid var(--accent);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--accent);
-    font-size: 22px;
-    font-weight: bold;
-    flex-shrink: 0;
-    box-shadow: 0 0 16px rgba(0,212,255,.4);
-  }
-  .header-text h1 {
-    font-size: clamp(15px, 3.5vw, 22px);
-    font-weight: 900;
-    letter-spacing: .04em;
-    color: #fff;
-    line-height: 1.3;
-  }
-  .header-text p {
-    font-size: clamp(11px, 2vw, 13px);
-    color: var(--muted);
-    font-family: 'Share Tech Mono', monospace;
-    margin-top: 4px;
-    letter-spacing: .08em;
-  }
-  .header-badge {
-    margin-left: auto;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px;
-    color: var(--accent);
-    border: 1px solid var(--accent);
-    padding: 5px 12px;
-    border-radius: 4px;
-    letter-spacing: .1em;
-    opacity: .85;
-    white-space: nowrap;
-  }
-
-  /* ── Layout ── */
-  .app-body {
-    display: flex;
-    height: calc(100vh - 82px);
-  }
-
-  /* ── Mobile menu toggle ── */
-  .mobile-toggle {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 200;
-    width: 54px; height: 54px;
-    background: var(--accent);
-    color: #000;
-    border: none;
-    border-radius: 50%;
-    font-size: 22px;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0,212,255,.5);
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* ── Sidebar ── */
-  .sidebar {
-    width: 320px;
-    background: var(--panel);
-    border-right: 1px solid var(--border);
-    overflow-y: auto;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    transition: transform .3s ease;
-  }
-  .sidebar::-webkit-scrollbar { width: 5px; }
-  .sidebar::-webkit-scrollbar-track { background: transparent; }
-  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-  .tab-nav {
-    border-bottom: 1px solid var(--border);
-    padding: 12px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-  .tab-btn {
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--muted);
-    padding: 12px 14px;
-    border-radius: 7px;
-    cursor: pointer;
-    text-align: left;
-    font-family: 'Noto Sans SC', sans-serif;
-    font-size: 16px;
-    font-weight: 500;
-    transition: all .2s;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .tab-btn:hover { color: var(--text); background: rgba(255,255,255,.05); }
-  .tab-btn.active {
-    background: rgba(0,212,255,.1);
-    border-color: rgba(0,212,255,.35);
-    color: var(--accent);
-  }
-  .tab-num {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px;
-    background: rgba(0,212,255,.15);
-    color: var(--accent);
-    padding: 3px 7px;
-    border-radius: 4px;
-    flex-shrink: 0;
-  }
-  .tab-btn.active .tab-num { background: var(--accent); color: #000; }
-
-  .param-section {
-    padding: 16px;
-    flex: 1;
-  }
-  .section-title {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px;
-    letter-spacing: .14em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 16px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border);
-  }
-  .param-group {
-    margin-bottom: 20px;
-  }
-  .param-group-title {
-    font-size: 15px;
-    color: var(--accent);
-    font-weight: 700;
-    margin-bottom: 12px;
-    letter-spacing: .04em;
-  }
-  .param-row {
-    margin-bottom: 14px;
-  }
-  .param-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-    gap: 8px;
-  }
-  .param-label span:first-child {
-    font-size: 15px;
-    color: var(--text);
-    font-weight: 500;
-  }
-  /* Number input box */
-  .param-input-wrap {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    width: 100%;
-  }
-  .param-numbox {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 15px;
-    color: var(--accent);
-    background: rgba(0,212,255,.08);
-    border: 1.5px solid rgba(0,212,255,.3);
-    border-radius: 5px;
-    padding: 5px 10px;
-    width: 90px;
-    text-align: right;
-    outline: none;
-    transition: border-color .2s, box-shadow .2s;
-    -moz-appearance: textfield;
-  }
-  .param-numbox::-webkit-outer-spin-button,
-  .param-numbox::-webkit-inner-spin-button { -webkit-appearance: none; }
-  .param-numbox:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(0,212,255,.18);
-  }
-  .param-unit {
-    font-size: 13px;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-
-  .reset-btn {
-    width: 100%;
-    margin-top: 8px;
-    padding: 11px;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 14px;
-    letter-spacing: .08em;
-    transition: all .2s;
-  }
-  .reset-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  /* ── Dynamic add/remove buttons ── */
-  .dyn-add-btn {
-    background: rgba(57,255,20,.1);
-    border: 1px solid rgba(57,255,20,.35);
-    color: #39ff14;
-    padding: 4px 10px;
-    border-radius: 5px;
-    font-size: 13px;
-    font-family: 'Noto Sans SC', sans-serif;
-    cursor: pointer;
-    transition: all .2s;
-    white-space: nowrap;
-  }
-  .dyn-add-btn:hover { background: rgba(57,255,20,.2); border-color: #39ff14; }
-  .dyn-del-btn {
-    background: transparent;
-    border: 1px solid rgba(255,80,80,.35);
-    color: rgba(255,100,100,.8);
-    width: 28px; height: 28px;
-    border-radius: 4px;
-    font-size: 13px;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: all .2s;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .dyn-del-btn:hover { background: rgba(255,80,80,.15); border-color: #ff5050; color: #ff5050; }
-
-  /* ── Main chart area ── */
-  .main-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    min-width: 0;
-  }
-  .chart-panel {
-    display: none;
-    flex: 1;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .chart-panel.active { display: flex; }
-
-  .chart-header {
-    padding: 14px 20px 12px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  .chart-title {
-    font-size: clamp(15px, 2.5vw, 19px);
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: .03em;
-    flex: 1;
-  }
-  .chart-sub {
-    font-size: 12px;
-    color: var(--muted);
-    font-family: 'Share Tech Mono', monospace;
-    letter-spacing: .05em;
-    display: block;
-    width: 100%;
-    margin-top: 3px;
-  }
-
-  /* Download button */
-  .dl-btn {
-    background: rgba(0,212,255,.1);
-    border: 1.5px solid rgba(0,212,255,.35);
-    color: var(--accent);
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-family: 'Share Tech Mono', monospace;
-    cursor: pointer;
-    transition: all .2s;
-    white-space: nowrap;
-    letter-spacing: .05em;
-  }
-  .dl-btn:hover {
-    background: rgba(0,212,255,.2);
-    border-color: var(--accent);
-    box-shadow: 0 0 10px rgba(0,212,255,.3);
-  }
-
-  .canvas-wrap {
-    flex: 1;
-    position: relative;
-    padding: 12px 20px 12px 6px;
-    overflow: hidden;
-  }
-  canvas.sim-chart {
-    position: absolute;
-    inset: 12px 20px 12px 6px;
-  }
-
-  /* ── Info cards ── */
-  .info-bar {
-    display: flex;
-    gap: 10px;
-    padding: 10px 20px;
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-    flex-wrap: wrap;
-  }
-  .info-card {
-    background: rgba(0,212,255,.07);
-    border: 1px solid rgba(0,212,255,.18);
-    border-radius: 7px;
-    padding: 8px 16px;
-    display: flex;
-    align-items: center;
-    gap: 9px;
-  }
-  .info-card-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .info-card-text {
-    font-size: 15px;
-    color: var(--text);
-    font-weight: 500;
-  }
-  .info-card-val {
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--accent);
-    font-size: 15px;
-  }
-
-  /* ── Responsive ── */
-  @media (max-width: 700px) {
-    .app-body { flex-direction: column; height: auto; }
-    .sidebar {
-      width: 100%;
-      max-height: 0;
-      overflow: hidden;
-      border-right: none;
-      border-bottom: 1px solid var(--border);
-      transition: max-height .3s ease;
-    }
-    .sidebar.open { max-height: 1200px; }
-    .main-area { height: calc(100svh - 82px); }
-    .mobile-toggle { display: flex; }
-    .canvas-wrap { padding: 8px 10px 8px 4px; }
-    canvas.sim-chart { inset: 8px 10px 8px 4px; }
-    .info-bar { padding: 8px 10px; gap: 6px; }
-    .info-card { padding: 6px 10px; }
-    .info-card-text, .info-card-val { font-size: 13px; }
-    .chart-header { padding: 10px 12px; }
-  }
-  @media (max-width: 400px) {
-    .tab-btn { font-size: 14px; }
-    .param-label span:first-child { font-size: 14px; }
-    .param-numbox { font-size: 14px; width: 80px; }
-  }
-user-select: none
-</style>
-</head>
-<body>
-
-<header>
-  <div class="logo-mark">刹</div>
-  <div class="header-text">
-    <h1>汽车制动性能仿真工具 · 广西大学 · 车辆工程专业 · 《汽车设计》课程教学团队</h1>
-    <p>AUTOMOTIVE BRAKING PERFORMANCE SIMULATION · INTERACTIVE ANALYSIS TOOL</p>
-  </div>
-  <div class="header-badge">GXU v2.0</div>
-</header>
-
-<button class="mobile-toggle" id="mobileToggle" onclick="toggleSidebar()" title="展开/收起参数面板">☰</button>
-
-<div class="app-body">
-
-  <!-- ── Sidebar ── -->
-  <aside class="sidebar" id="sidebar">
-    <nav class="tab-nav">
-      <button class="tab-btn active" onclick="switchTab(0)">
-        <span class="tab-num">01</span>制动力分配曲线
-      </button>
-      <button class="tab-btn" onclick="switchTab(1)">
-        <span class="tab-num">02</span>利用附着系数曲线
-      </button>
-      <button class="tab-btn" onclick="switchTab(2)">
-        <span class="tab-num">03</span>制动效率曲线
-      </button>
-      <button class="tab-btn" onclick="switchTab(3)">
-        <span class="tab-num">04</span>制动距离 vs 附着系数
-      </button>
-      <button class="tab-btn" onclick="switchTab(4)">
-        <span class="tab-num">05</span>制动距离 vs 初速度
-      </button>
-    </nav>
-
-    <!-- PARAMS 0 -->
-    <div class="param-section" id="params-0">
-      <div class="section-title">▸ 参数控制</div>
-      <div class="param-group">
-        <div class="param-group-title">空载参数</div>
-        <div class="param-row">
-          <div class="param-label"><span>整车质量 m₁</span><span class="param-unit">kg</span></div>
-          <input class="param-numbox" type="number" id="n-m1" value="1520" step="10" min="800" max="2500" oninput="setP('m1',+this.value);draw(0)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>质心高 h₁</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n-h1" value="0.532" step="0.001" min="0.1" max="2" oninput="setP('h1',+this.value);draw(0)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>后轴距 b₁</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n-b1" value="1.623" step="0.001" min="0.1" max="5" oninput="setP('b1',+this.value);draw(0)">
-        </div>
-      </div>
-      <div class="param-group">
-        <div class="param-group-title">满载参数</div>
-        <div class="param-row">
-          <div class="param-label"><span>整车质量 m₂</span><span class="param-unit">kg</span></div>
-          <input class="param-numbox" type="number" id="n-m2" value="1910" step="10" min="800" max="5000" oninput="setP('m2',+this.value);draw(0)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>质心高 h₂</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n-h2" value="0.591" step="0.001" min="0.1" max="2" oninput="setP('h2',+this.value);draw(0)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>后轴距 b₂</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n-b2" value="1.217" step="0.001" min="0.1" max="5" oninput="setP('b2',+this.value);draw(0)">
-        </div>
-      </div>
-      <div class="param-group">
-        <div class="param-group-title">车辆公共参数</div>
-        <div class="param-row">
-          <div class="param-label"><span>轴距 L</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n-L" value="2.705" step="0.001" min="1" max="10" oninput="setP('L',+this.value);draw(0)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>制动力分配系数 β</span><span class="param-unit"></span></div>
-          <input class="param-numbox" type="number" id="n-bt" value="0.5625" step="0.0025" min="0.01" max="0.99" oninput="setP('bt',+this.value);draw(0)">
-        </div>
-      </div>
-      <button class="reset-btn" onclick="resetParams(0)">↺ 恢复默认值</button>
-    </div>
-
-    <!-- PARAMS 1 -->
-    <div class="param-section" id="params-1" style="display:none">
-      <div class="section-title">▸ 参数控制</div>
-      <div class="param-group">
-        <div class="param-group-title">空载参数</div>
-        <div class="param-row">
-          <div class="param-label"><span>质心高 h₁</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n2-h1" value="0.532" step="0.001" min="0.1" max="2" oninput="setP2('h1',+this.value);draw(1)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>前轴距 a₁</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n2-a1" value="1.082" step="0.001" min="0.1" max="5" oninput="setP2('a1',+this.value);draw(1)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>后轴距 b₁</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n2-b1" value="1.623" step="0.001" min="0.1" max="5" oninput="setP2('b1',+this.value);draw(1)">
-        </div>
-      </div>
-      <div class="param-group">
-        <div class="param-group-title">满载参数</div>
-        <div class="param-row">
-          <div class="param-label"><span>质心高 h₂</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n2-h2" value="0.591" step="0.001" min="0.1" max="2" oninput="setP2('h2',+this.value);draw(1)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>前轴距 a₂</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n2-a2" value="1.488" step="0.001" min="0.1" max="5" oninput="setP2('a2',+this.value);draw(1)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>后轴距 b₂</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n2-b2" value="1.217" step="0.001" min="0.1" max="5" oninput="setP2('b2',+this.value);draw(1)">
-        </div>
-      </div>
-      <div class="param-group">
-        <div class="param-group-title">公共参数</div>
-        <div class="param-row">
-          <div class="param-label"><span>轴距 L</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n2-L" value="2.705" step="0.001" min="1" max="10" oninput="setP2('L',+this.value);draw(1)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>分配系数 β</span><span class="param-unit"></span></div>
-          <input class="param-numbox" type="number" id="n2-bt" value="0.64" step="0.01" min="0.01" max="0.99" oninput="setP2('bt',+this.value);draw(1)">
-        </div>
-      </div>
-      <button class="reset-btn" onclick="resetParams(1)">↺ 恢复默认值</button>
-    </div>
-
-    <!-- PARAMS 2 -->
-    <div class="param-section" id="params-2" style="display:none">
-      <div class="section-title">▸ 参数控制</div>
-      <div class="param-group">
-        <div class="param-group-title">空载参数</div>
-        <div class="param-row">
-          <div class="param-label"><span>质心高 h₁</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n3-h1" value="0.532" step="0.001" min="0.1" max="2" oninput="setP3('h1',+this.value);draw(2)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>前轴距 a₁</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n3-a1" value="1.082" step="0.001" min="0.1" max="5" oninput="setP3('a1',+this.value);draw(2)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>后轴距 b₁</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n3-b1" value="1.623" step="0.001" min="0.1" max="5" oninput="setP3('b1',+this.value);draw(2)">
-        </div>
-      </div>
-      <div class="param-group">
-        <div class="param-group-title">满载参数</div>
-        <div class="param-row">
-          <div class="param-label"><span>质心高 h₂</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n3-h2" value="0.591" step="0.001" min="0.1" max="2" oninput="setP3('h2',+this.value);draw(2)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>前轴距 a₂</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n3-a2" value="1.488" step="0.001" min="0.1" max="5" oninput="setP3('a2',+this.value);draw(2)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>后轴距 b₂</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n3-b2" value="1.217" step="0.001" min="0.1" max="5" oninput="setP3('b2',+this.value);draw(2)">
-        </div>
-      </div>
-      <div class="param-group">
-        <div class="param-group-title">公共参数</div>
-        <div class="param-row">
-          <div class="param-label"><span>轴距 L</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n3-L" value="2.705" step="0.001" min="1" max="10" oninput="setP3('L',+this.value);draw(2)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>分配系数 β</span><span class="param-unit"></span></div>
-          <input class="param-numbox" type="number" id="n3-bt" value="0.64" step="0.01" min="0.01" max="0.99" oninput="setP3('bt',+this.value);draw(2)">
-        </div>
-      </div>
-      <button class="reset-btn" onclick="resetParams(2)">↺ 恢复默认值</button>
-    </div>
-
-    <!-- PARAMS 3 -->
-    <div class="param-section" id="params-3" style="display:none">
-      <div class="section-title">▸ 参数控制</div>
-      <div class="param-group">
-        <div class="param-group-title">满载参数</div>
-        <div class="param-row">
-          <div class="param-label"><span>质心高 h</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n4-h1" value="0.591" step="0.001" min="0.1" max="2" oninput="setP4('h1',+this.value);draw(3)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>前轴距 a</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n4-a" value="1.488" step="0.001" min="0.1" max="5" oninput="setP4('a',+this.value);draw(3)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>后轴距 b</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n4-b" value="1.217" step="0.001" min="0.1" max="5" oninput="setP4('b',+this.value);draw(3)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>轴距 L</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n4-L" value="2.705" step="0.001" min="1" max="10" oninput="setP4('L',+this.value);draw(3)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>分配系数 β</span><span class="param-unit"></span></div>
-          <input class="param-numbox" type="number" id="n4-bt" value="0.64" step="0.01" min="0.01" max="0.99" oninput="setP4('bt',+this.value);draw(3)">
-        </div>
-      </div>
-      <div class="param-group">
-        <div class="param-group-title">制动时间参数</div>
-        <div class="param-row">
-          <div class="param-label"><span>反应时间 t₁</span><span class="param-unit">s</span></div>
-          <input class="param-numbox" type="number" id="n4-t1" value="0.1" step="0.01" min="0" max="5" oninput="setP4('t1',+this.value);draw(3)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>制动增长时间 t₂</span><span class="param-unit">s</span></div>
-          <input class="param-numbox" type="number" id="n4-t2" value="0.3" step="0.01" min="0" max="5" oninput="setP4('t2',+this.value);draw(3)">
-        </div>
-      </div>
-      <div class="param-group">
-        <div class="param-group-title" style="display:flex;justify-content:space-between;align-items:center">
-          <span>制动初速度 (km/h)</span>
-          <button class="dyn-add-btn" onclick="addSpeed()" title="添加速度">＋ 添加</button>
-        </div>
-        <div id="speed-inputs"></div>
-      </div>
-      <button class="reset-btn" onclick="resetParams(3)">↺ 恢复默认值</button>
-    </div>
-
-    <!-- PARAMS 4 -->
-    <div class="param-section" id="params-4" style="display:none">
-      <div class="section-title">▸ 参数控制</div>
-      <div class="param-group">
-        <div class="param-group-title">车辆参数</div>
-        <div class="param-row">
-          <div class="param-label"><span>质心高 h</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n5-h1" value="0.591" step="0.001" min="0.1" max="2" oninput="setP5('h1',+this.value);draw(4)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>前轴距 a</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n5-a" value="1.488" step="0.001" min="0.1" max="5" oninput="setP5('a',+this.value);draw(4)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>后轴距 b</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n5-b" value="1.217" step="0.001" min="0.1" max="5" oninput="setP5('b',+this.value);draw(4)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>轴距 L</span><span class="param-unit">m</span></div>
-          <input class="param-numbox" type="number" id="n5-L" value="2.705" step="0.001" min="1" max="10" oninput="setP5('L',+this.value);draw(4)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>分配系数 β</span><span class="param-unit"></span></div>
-          <input class="param-numbox" type="number" id="n5-bt" value="0.64" step="0.01" min="0.01" max="0.99" oninput="setP5('bt',+this.value);draw(4)">
-        </div>
-      </div>
-      <div class="param-group">
-        <div class="param-group-title">制动时间参数</div>
-        <div class="param-row">
-          <div class="param-label"><span>反应时间 t₁</span><span class="param-unit">s</span></div>
-          <input class="param-numbox" type="number" id="n5-t1" value="0.1" step="0.01" min="0" max="5" oninput="setP5('t1',+this.value);draw(4)">
-        </div>
-        <div class="param-row">
-          <div class="param-label"><span>制动增长时间 t₂</span><span class="param-unit">s</span></div>
-          <input class="param-numbox" type="number" id="n5-t2" value="0.3" step="0.01" min="0" max="5" oninput="setP5('t2',+this.value);draw(4)">
-        </div>
-      </div>
-      <div class="param-group">
-        <div class="param-group-title" style="display:flex;justify-content:space-between;align-items:center">
-          <span>附着系数设置</span>
-          <button class="dyn-add-btn" onclick="addMu()" title="添加附着系数">＋ 添加</button>
-        </div>
-        <div id="mu-inputs"></div>
-      </div>
-      <button class="reset-btn" onclick="resetParams(4)">↺ 恢复默认值</button>
-    </div>
-  </aside>
-
-  <!-- ── Main Charts ── -->
-  <main class="main-area">
-
-    <!-- Chart 0 -->
-    <div class="chart-panel active" id="panel-0">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">制动力分配曲线（I 曲线 与 β 线）</div>
-          <span class="chart-sub">BRAKING FORCE DISTRIBUTION · IDEAL CURVE vs ACTUAL DISTRIBUTION LINE</span>
-        </div>
-        <button class="dl-btn" onclick="downloadChart('chart0','制动力分配曲线')">⬇ 下载图片</button>
-      </div>
-      <div class="canvas-wrap"><canvas id="chart0" class="sim-chart"></canvas></div>
-      <div class="info-bar" id="info0"></div>
-    </div>
-
-    <!-- Chart 1 -->
-    <div class="chart-panel" id="panel-1">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">利用附着系数与制动强度曲线</div>
-          <span class="chart-sub">UTILIZATION ADHESION COEFFICIENT vs BRAKING INTENSITY</span>
-        </div>
-        <button class="dl-btn" onclick="downloadChart('chart1','利用附着系数曲线')">⬇ 下载图片</button>
-      </div>
-      <div class="canvas-wrap"><canvas id="chart1" class="sim-chart"></canvas></div>
-      <div class="info-bar" id="info1"></div>
-    </div>
-
-    <!-- Chart 2 -->
-    <div class="chart-panel" id="panel-2">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">制动效率与附着系数关系曲线</div>
-          <span class="chart-sub">BRAKING EFFICIENCY vs ADHESION COEFFICIENT</span>
-        </div>
-        <button class="dl-btn" onclick="downloadChart('chart2','制动效率曲线')">⬇ 下载图片</button>
-      </div>
-      <div class="canvas-wrap"><canvas id="chart2" class="sim-chart"></canvas></div>
-      <div class="info-bar" id="info2"></div>
-    </div>
-
-    <!-- Chart 3 -->
-    <div class="chart-panel" id="panel-3">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">不同初速度下的制动距离与附着系数关系</div>
-          <span class="chart-sub">BRAKING DISTANCE vs ADHESION COEFFICIENT · MULTIPLE INITIAL SPEEDS</span>
-        </div>
-        <button class="dl-btn" onclick="downloadChart('chart3','制动距离vs附着系数')">⬇ 下载图片</button>
-      </div>
-      <div class="canvas-wrap"><canvas id="chart3" class="sim-chart"></canvas></div>
-      <div class="info-bar" id="info3"></div>
-    </div>
-
-    <!-- Chart 4 -->
-    <div class="chart-panel" id="panel-4">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">不同附着系数下的制动距离与制动初速度关系</div>
-          <span class="chart-sub">BRAKING DISTANCE vs INITIAL SPEED · MULTIPLE ADHESION COEFFICIENTS</span>
-        </div>
-        <button class="dl-btn" onclick="downloadChart('chart4','制动距离vs初速度')">⬇ 下载图片</button>
-      </div>
-      <div class="canvas-wrap"><canvas id="chart4" class="sim-chart"></canvas></div>
-      <div class="info-bar" id="info4"></div>
-    </div>
-
-  </main>
-</div>
-
-<script>
-// ═══════════════════════════════════════════════════════════
-// MOBILE SIDEBAR TOGGLE
-// ═══════════════════════════════════════════════════════════
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
+.sim-wrap {
+  --sim-bg:     #080d18;
+  --sim-panel:  #0e1525;
+  --sim-border: #1a2d48;
+  --sim-accent: #00d4ff;
+  --sim-text:   #ddeaf8;
+  --sim-muted:  #91a8c4;
+  background: var(--sim-bg);
+  color: var(--sim-text);
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: "微软雅黑","Microsoft YaHei",sans-serif;
+}
+.sim-body-row {
+  display: flex;
+  height: clamp(520px, calc(100vh - 340px), 760px);
+}
+.sim-side {
+  width: 320px;
+  background: var(--sim-panel);
+  border-right: 1px solid var(--sim-border);
+  overflow-y: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sim-side::-webkit-scrollbar{width:4px;}
+.sim-side::-webkit-scrollbar-thumb{background:var(--sim-border);border-radius:3px;}
+.sim-tab-nav {
+  border-bottom: 1px solid var(--sim-border);
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sim-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--sim-muted);
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.sim-tab-btn:hover{color:var(--sim-text);background:rgba(255,255,255,.05);}
+.sim-tab-btn.active{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.35);color:var(--sim-accent);}
+.sim-param-section{padding:14px;flex:1;}
+.sim-param-group{margin-bottom:18px;}
+.sim-param-group-title{font-size:14px;color:var(--sim-accent);font-weight:700;margin-bottom:10px;}
+.sim-param-row{margin-bottom:12px;}
+.sim-param-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;gap:6px;}
+.sim-param-label span:first-child{font-size:14px;color:var(--sim-text);}
+.sim-param-numbox {
+  font-family: monospace;
+  font-size: 14px;
+  color: var(--sim-accent);
+  background: rgba(0,212,255,.08);
+  border: 1.5px solid rgba(0,212,255,.3);
+  border-radius: 5px;
+  padding: 5px 8px;
+  width: 86px;
+  text-align: right;
+  outline: none;
+  -moz-appearance: textfield;
+}
+.sim-param-numbox::-webkit-outer-spin-button,
+.sim-param-numbox::-webkit-inner-spin-button{-webkit-appearance:none;}
+.sim-param-numbox:focus{border-color:var(--sim-accent);box-shadow:0 0 0 2px rgba(0,212,255,.18);}
+.sim-param-unit{font-size:12px;color:var(--sim-muted);white-space:nowrap;}
+.sim-reset-btn {
+  width:100%;margin-top:6px;padding:9px;
+  background:transparent;border:1px solid var(--sim-border);
+  color:var(--sim-muted);border-radius:5px;cursor:pointer;
+  font-family:monospace;font-size:13px;letter-spacing:.06em;
+  transition:all .2s;
+}
+.sim-reset-btn:hover{border-color:var(--sim-accent);color:var(--sim-accent);}
+.sim-dyn-add-btn{
+  background:rgba(57,255,20,.1);border:1px solid rgba(57,255,20,.35);
+  color:#39ff14;padding:3px 8px;border-radius:4px;font-size:12px;cursor:pointer;
+}
+.sim-dyn-add-btn:hover{background:rgba(57,255,20,.2);}
+.sim-dyn-del-btn{
+  background:transparent;border:1px solid rgba(255,80,80,.35);
+  color:rgba(255,100,100,.8);width:26px;height:26px;border-radius:4px;
+  font-size:12px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+}
+.sim-dyn-del-btn:hover{background:rgba(255,80,80,.15);color:#ff5050;}
+.sim-main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+.sim-chart-panel{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.sim-chart-panel.active{display:flex;}
+.sim-chart-header{
+  padding:12px 16px 10px;border-bottom:1px solid var(--sim-border);
+  flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+}
+.sim-chart-title{font-size:16px;font-weight:700;color:#fff;flex:1;}
+.sim-dl-btn{
+  background:rgba(0,212,255,.1);border:1.5px solid rgba(0,212,255,.35);
+  color:var(--sim-accent);padding:6px 12px;border-radius:5px;
+  font-size:13px;font-family:monospace;cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.sim-dl-btn:hover{background:rgba(0,212,255,.2);border-color:var(--sim-accent);}
+.sim-canvas-wrap{flex:1;position:relative;min-height:0;overflow:hidden;}
+canvas.sim-canvas{position:absolute;inset:0;width:100%;height:100%;}
+.sim-info-bar{
+  display:flex;gap:8px;padding:8px 16px;
+  border-top:1px solid var(--sim-border);flex-shrink:0;flex-wrap:wrap;
 }
 
-// ═══════════════════════════════════════════════════════════
-// WORD-FRIENDLY CHART CLASS (white background, dark lines)
-// ═══════════════════════════════════════════════════════════
-// Color palette for printed/Word output — high contrast on white
-const WORD_COLORS = ['#1565C0','#C62828','#2E7D32','#E65100','#6A1B9A'];
+:root {
+  --blue: #1a4a8a;
+  --bg: #f0f4fb;
+  --border: #c8d8f0;
+  --header-bg: #1a3560;
+}
+.standalone { width: 100%; max-width: 1440px; margin: 0 auto; padding: 12px 16px 20px; }
+.sim-case-results { margin-bottom: 12px; }
+.sim-case-results .info-box { margin-top: 0; }
+.sim-table { overflow-x: auto; }
+.sim-table th, .sim-table td { text-align: left; }
+.sim-table th:first-child, .sim-table td:first-child { white-space: nowrap; }
+.sim-table .result-table { margin-top: 0; background: white; }
+.sim-model-note { margin-top: 8px; font-size: 12px; line-height: 1.5; color: #50627b; }
 
-class WordChart {
+.sim-toolbar {
+  background: var(--sim-panel); border-bottom: 1px solid var(--sim-border);
+  padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px 16px;
+}
+.sim-input-state { font-size: 13px; color: var(--sim-text); line-height: 1.5; }
+.sim-case-option { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.sim-case-option select, .sim-field select {
+  font: inherit; color: var(--sim-text); background: #172941; border: 1px solid #3c5576;
+  border-radius: 5px; padding: 5px 7px;
+}
+.sim-settings { padding: 12px 14px; }
+.sim-settings summary { color: var(--sim-accent); cursor: pointer; font-weight: 700; padding: 2px 0; }
+.sim-settings .sim-param-group { margin: 14px 0 0; }
+.sim-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sim-field { min-width: 0; }
+.sim-field label { display: block; line-height: 1.35; margin-bottom: 5px; font-size: 12px; }
+.sim-field input, .sim-field select { width: 100%; min-height: 31px; }
+.sim-field-note { margin-top: 8px; font-size: 12px; line-height: 1.5; color: var(--sim-muted); }
+.sim-field input:disabled { opacity: .5; }
+.sim-field input:invalid, .sim-param-row input:invalid { border-color: #ff8585; }
+.sim-preset { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.sim-preset .sim-reset-btn { width: auto; padding: 6px 8px; margin: 0; min-height: 31px; font-size: 12px; }
+.sim-param-section { border-bottom: 1px solid var(--sim-border); flex: none; }
+.sim-param-section .sim-param-group-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sim-series-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.sim-series-fields .sim-param-row { margin: 0; min-width: 0; }
+.sim-series-fields input { width: 100%; min-width: 0; }
+.sim-series-fields label { font-size: 12px; }
+.sim-dyn-add-btn:disabled, .sim-dl-btn:disabled { opacity: .45; cursor: default; }
+.sim-info-bar { color: var(--sim-text); font-size: 13px; line-height: 1.5; }
+.sim-tab-btn:focus-visible, .sim-settings summary:focus-visible, .sim-dl-btn:focus-visible {
+  outline: 2px solid var(--sim-accent); outline-offset: 2px;
+}
+[hidden] { display: none !important; }
+@media (max-width: 760px) {
+  .standalone { padding: 8px 10px 16px; }
+  .sim-table th, .sim-table td { padding: 7px 6px; }
+  .sim-body-row { flex-direction: column; height: auto; }
+  .sim-side { width: 100%; border-right: 0; border-bottom: 1px solid var(--sim-border); overflow-y: visible; }
+  .sim-tab-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sim-tab-btn { font-size: 13px; padding: 8px; }
+  .sim-canvas-wrap { flex: none; height: 360px; }
+}
+
+</style>
+<script>
+// 防止右键及查看源代码快捷键
+(function () {
+  document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  document.addEventListener('keydown', function (e) {
+    var c = e.code || '';
+    var ctrl = e.ctrlKey || e.metaKey;
+    if (e.key === 'F12' || c === 'F12' ||
+        (ctrl && !e.shiftKey && !e.altKey && (c === 'KeyU' || c === 'KeyS')) ||
+        (ctrl && e.shiftKey && (c === 'KeyI' || c === 'KeyJ' || c === 'KeyC')) ||
+        (e.metaKey && e.altKey && (c === 'KeyI' || c === 'KeyJ' || c === 'KeyC' || c === 'KeyU'))) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+})();
+</script>
+</head>
+<body>
+  <header class="app-header">
+    <h1>汽车制动性能仿真工具</h1>
+    <p class="sub">广西大学 · 车辆工程专业 · 《汽车设计》课程教学团队</p>
+  </header>
+  <main class="standalone">
+    <section class="sim-case-results" aria-label="统一校核结果">
+      <p class="info-box" id="simScenario"></p>
+      <p class="info-box" id="simError" role="status" hidden></p>
+      <div class="sim-table" id="simulationCaseResults"></div>
+      <p class="sim-model-note">制动距离从操纵开始计，含机构延迟与线性建压。模型按平路、恒定附着计算，轮胎纵向力在各轴附着上限处封顶。</p>
+    </section>
+    <div class="sim-wrap">
+      <div class="sim-toolbar">
+        <p class="sim-input-state" id="simInputState"></p>
+        <label class="sim-case-option" for="simLoad">距离曲线载荷
+          <select id="simLoad"><option value="full">满载</option><option value="empty">空载</option></select>
+        </label>
+      </div>
+      <div class="sim-body-row">
+        <aside class="sim-side" aria-label="仿真控制">
+          <nav class="sim-tab-nav" aria-label="曲线类型">
+          <button type="button" class="sim-tab-btn active" aria-pressed="true" onclick="simSwitchTab(0)">制动力分配曲线</button>
+          <button type="button" class="sim-tab-btn" aria-pressed="false" onclick="simSwitchTab(1)">利用附着系数曲线</button>
+          <button type="button" class="sim-tab-btn" aria-pressed="false" onclick="simSwitchTab(2)">制动效率曲线</button>
+          <button type="button" class="sim-tab-btn" aria-pressed="false" onclick="simSwitchTab(3)">制动距离 vs 附着系数</button>
+          <button type="button" class="sim-tab-btn" aria-pressed="false" onclick="simSwitchTab(4)">制动距离 vs 初速度</button>
+        </nav>
+          <div class="sim-param-section" id="sim-params-3" hidden>
+            <h3 class="sim-param-group-title">制动初速度
+              <button type="button" class="sim-dyn-add-btn" id="sim-add-speed" onclick="simAddSpeed()">＋ 添加</button>
+            </h3>
+            <div class="sim-series-fields" id="sim-speed-inputs"></div>
+          </div>
+          <div class="sim-param-section" id="sim-params-4" hidden>
+            <h3 class="sim-param-group-title">路面附着系数
+              <button type="button" class="sim-dyn-add-btn" id="sim-add-mu" onclick="simAddMu()">＋ 添加</button>
+            </h3>
+            <div class="sim-series-fields" id="sim-mu-inputs"></div>
+          </div>
+          <details class="sim-settings" id="sim-settings" open>
+            <summary>仿真参数</summary>
+            <div class="sim-param-group sim-preset">
+              <div class="sim-field">
+                <label for="simPreset">参考工况</label>
+                <select id="simPreset">
+                  <option value="disc">17.90 盘式工况</option>
+                  <option value="drum">17.91 鼓式工况</option>
+                </select>
+              </div>
+              <button type="button" class="sim-reset-btn" id="simReset">恢复预设</button>
+            </div>
+            <div id="sim-parameters">
+              <div class="sim-param-group">
+                <h3 class="sim-param-group-title">质量与质心</h3>
+                <div class="sim-fields">
+                  <div class="sim-field">
+                    <label for="m0">空载质量 <span class="sim-param-unit">kg</span></label>
+                    <input class="sim-param-numbox" type="number" id="m0" min="1" step="any">
+                  </div>
+                  <div class="sim-field">
+                    <label for="ma">满载质量 <span class="sim-param-unit">kg</span></label>
+                    <input class="sim-param-numbox" type="number" id="ma" min="1" step="any">
+                  </div>
+                  <div class="sim-field">
+                    <label for="hg_empty">空载质心高 <span class="sim-param-unit">mm</span></label>
+                    <input class="sim-param-numbox" type="number" id="hg_empty" min="1" step="any">
+                  </div>
+                  <div class="sim-field">
+                    <label for="hg_full">满载质心高 <span class="sim-param-unit">mm</span></label>
+                    <input class="sim-param-numbox" type="number" id="hg_full" min="1" step="any">
+                  </div>
+                  <div class="sim-field">
+                    <label for="front_empty">空载前轴荷占比 <span class="sim-param-unit">%</span></label>
+                    <input class="sim-param-numbox" type="number" id="front_empty" min="0" max="100" step="any">
+                  </div>
+                  <div class="sim-field">
+                    <label for="front_full">满载前轴荷占比 <span class="sim-param-unit">%</span></label>
+                    <input class="sim-param-numbox" type="number" id="front_full" min="0" max="100" step="any">
+                  </div>
+                </div>
+              </div>
+              <div class="sim-param-group">
+                <h3 class="sim-param-group-title">车辆与制动系统</h3>
+                <div class="sim-fields">
+                  <div class="sim-field">
+                    <label for="L">轴距 L <span class="sim-param-unit">mm</span></label>
+                    <input class="sim-param-numbox" type="number" id="L" min="1" step="any">
+                  </div>
+                  <div class="sim-field">
+                    <label for="re">车轮有效半径 <span class="sim-param-unit">mm</span></label>
+                    <input class="sim-param-numbox" type="number" id="re" min="1" step="any">
+                  </div>
+                  <div class="sim-field">
+                    <label for="pressureMode">前后轴压力分配</label>
+                    <select id="pressureMode">
+                      <option value="matched">按设计 β 配压</option>
+                      <option value="equal">前后同压</option>
+                    </select>
+                  </div>
+                  <div class="sim-field">
+                    <label for="beta">设计分配系数 β</label>
+                    <input class="sim-param-numbox" type="number" id="beta" min="0" max="1" step="any">
+                  </div>
+                  <div class="sim-field">
+                    <label for="gainFront">前轴单侧力矩增益 <span class="sim-param-unit">N·m/MPa</span></label>
+                    <input class="sim-param-numbox" type="number" id="gainFront" min="0" step="any">
+                  </div>
+                  <div class="sim-field">
+                    <label for="gainRear">后轴单侧力矩增益 <span class="sim-param-unit">N·m/MPa</span></label>
+                    <input class="sim-param-numbox" type="number" id="gainRear" min="0" step="any">
+                  </div>
+                  <div class="sim-field">
+                    <label for="pressure">可用管压 <span class="sim-param-unit">MPa</span></label>
+                    <input class="sim-param-numbox" type="number" id="pressure" min="0" step="any">
+                  </div>
+                </div>
+                <p class="sim-field-note">单侧力矩增益等于该轴单侧制动器力矩除以对应轮缸压力。</p>
+              </div>
+              <div class="sim-param-group">
+                <h3 class="sim-param-group-title">校核工况</h3>
+                <div class="sim-fields">
+                  <div class="sim-field">
+                    <label for="v0">制动初速度 v₀ <span class="sim-param-unit">km/h</span></label>
+                    <input class="sim-param-numbox" type="number" id="v0" min="0" max="500" step="any">
+                  </div>
+                  <div class="sim-field">
+                    <label for="phi">路面附着系数 φ</label>
+                    <input class="sim-param-numbox" type="number" id="phi" min="0" max="2" step="any">
+                  </div>
+                  <div class="sim-field">
+                    <label for="tDelay">机构延迟 t₁ <span class="sim-param-unit">s</span></label>
+                    <input class="sim-param-numbox" type="number" id="tDelay" min="0" step="any">
+                  </div>
+                  <div class="sim-field">
+                    <label for="tRamp">建压时间 t₂ <span class="sim-param-unit">s</span></label>
+                    <input class="sim-param-numbox" type="number" id="tRamp" min="0" step="any">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
+        </aside>
+        <section class="sim-main-area" aria-label="仿真图表">
+        <!-- Chart 0 -->
+        <div class="sim-chart-panel active" id="sim-panel-0">
+          <div class="sim-chart-header">
+            <div>
+              <h2 class="sim-chart-title">制动力分配曲线（I 曲线 与 β 线）</h2>
+            </div>
+            <button type="button" class="sim-dl-btn" onclick="simDownloadChart('sim-chart0','制动力分配曲线')">⬇ 下载图片</button>
+          </div>
+          <div class="sim-canvas-wrap"><canvas id="sim-chart0" class="sim-canvas" role="img" aria-label="制动力分配曲线（I 曲线 与 β 线）"></canvas></div>
+          <div class="sim-info-bar" id="sim-info0"></div>
+        </div>
+        <!-- Chart 1 -->
+        <div class="sim-chart-panel" id="sim-panel-1">
+          <div class="sim-chart-header">
+            <div>
+              <h2 class="sim-chart-title">利用附着系数与制动强度曲线</h2>
+            </div>
+            <button type="button" class="sim-dl-btn" onclick="simDownloadChart('sim-chart1','利用附着系数曲线')">⬇ 下载图片</button>
+          </div>
+          <div class="sim-canvas-wrap"><canvas id="sim-chart1" class="sim-canvas" role="img" aria-label="利用附着系数与制动强度曲线"></canvas></div>
+          <div class="sim-info-bar" id="sim-info1"></div>
+        </div>
+        <!-- Chart 2 -->
+        <div class="sim-chart-panel" id="sim-panel-2">
+          <div class="sim-chart-header">
+            <div>
+              <h2 class="sim-chart-title">制动效率与附着系数关系曲线</h2>
+            </div>
+            <button type="button" class="sim-dl-btn" onclick="simDownloadChart('sim-chart2','制动效率曲线')">⬇ 下载图片</button>
+          </div>
+          <div class="sim-canvas-wrap"><canvas id="sim-chart2" class="sim-canvas" role="img" aria-label="制动效率与附着系数关系曲线"></canvas></div>
+          <div class="sim-info-bar" id="sim-info2"></div>
+        </div>
+        <!-- Chart 3 -->
+        <div class="sim-chart-panel" id="sim-panel-3">
+          <div class="sim-chart-header">
+            <div>
+              <h2 class="sim-chart-title">不同初速度下的制动距离与附着系数关系</h2>
+            </div>
+            <button type="button" class="sim-dl-btn" onclick="simDownloadChart('sim-chart3','制动距离vs附着系数')">⬇ 下载图片</button>
+          </div>
+          <div class="sim-canvas-wrap"><canvas id="sim-chart3" class="sim-canvas" role="img" aria-label="不同初速度下的制动距离与附着系数关系"></canvas></div>
+          <div class="sim-info-bar" id="sim-info3"></div>
+        </div>
+        <!-- Chart 4 -->
+        <div class="sim-chart-panel" id="sim-panel-4">
+          <div class="sim-chart-header">
+            <div>
+              <h2 class="sim-chart-title">不同附着系数下的制动距离与制动初速度关系</h2>
+            </div>
+            <button type="button" class="sim-dl-btn" onclick="simDownloadChart('sim-chart4','制动距离vs初速度')">⬇ 下载图片</button>
+          </div>
+          <div class="sim-canvas-wrap"><canvas id="sim-chart4" class="sim-canvas" role="img" aria-label="不同附着系数下的制动距离与制动初速度关系"></canvas></div>
+          <div class="sim-info-bar" id="sim-info4"></div>
+        </div>
+      </section>
+      </div>
+    </div>
+  </main>
+<script>
+// 制动性模型及五种曲线取自第9章 17.90、17.91 的仿真模块。
+
+const BrakeModel = (() => {
+  const g = 9.81;
+  const positive = (...values) => values.every(value => Number.isFinite(value) && value > 0);
+  const nonnegative = (...values) => values.every(value => Number.isFinite(value) && value >= 0);
+
+  function lockLimits(load, beta, mu) {
+    const { front, k } = load;
+    const frontDenom = beta - mu * k;
+    const zFront = frontDenom > 0 ? mu * front / frontDenom : Infinity;
+    const zRear = mu * (1 - front) / (1 - beta + mu * k);
+    const lift = (1 - front) / k;
+    const zRoad = Math.min(mu, lift);
+    const zFirst = Math.min(zFront, zRear, zRoad);
+    const first = Math.abs(zFront - zRear) < 1e-9 ? 'both' : zFront < zRear ? 'front' : 'rear';
+    const qEnd = mu > lift ? lift / beta
+      : Math.max(mu * (front + k * zRoad) / beta, mu * (1 - front - k * zRoad) / (1 - beta));
+    return { zFront, zRear, zFirst, first, zRoad, qEnd, lift };
+  }
+
+  function brakingForce(load, beta, mu, q, limits = lockLimits(load, beta, mu)) {
+    if (q <= limits.zFirst) return q;
+    if (q >= limits.qEnd) return limits.zRoad;
+    const z = limits.first === 'front'
+      ? (mu * load.front + (1 - beta) * q) / (1 - mu * load.k)
+      : (mu * (1 - load.front) + beta * q) / (1 + mu * load.k);
+    return Math.min(z, limits.zRoad);
+  }
+
+  // q is commanded tyre force divided by weight. After each axle reaches
+  // adhesion, its force is capped at mu times its dynamic normal load.
+  function stop(load, beta, mu, qAvailable, speed, delay, ramp) {
+    const limits = lockLimits(load, beta, mu);
+    const j = g * brakingForce(load, beta, mu, qAvailable, limits);
+    const u = speed / 3.6;
+    if (u === 0) return { j, distance: 0, time: 0, limits };
+    if (!(j > 0)) return { j, distance: null, time: null, limits };
+
+    let velocity = u;
+    let distance = u * delay;
+    let time = delay;
+    if (ramp > 0) {
+      const breakpoints = [0, limits.zFirst, limits.qEnd, qAvailable]
+        .filter(q => q >= 0 && q <= qAvailable);
+      for (let i = 1; i < breakpoints.length; i++) {
+        const q0 = breakpoints[i - 1], q1 = breakpoints[i];
+        const duration = (q1 - q0) / qAvailable * ramp;
+        if (duration <= 0) continue;
+        const a0 = g * brakingForce(load, beta, mu, q0, limits);
+        const a1 = g * brakingForce(load, beta, mu, q1, limits);
+        const jerk = Math.max(0, a1 - a0) / duration;
+        const stopsHere = velocity <= (a0 + a1) * duration / 2;
+        const t = stopsHere ? 2 * velocity / (a0 + Math.sqrt(a0 ** 2 + 2 * jerk * velocity)) : duration;
+        distance += velocity * t - a0 * t ** 2 / 2 - jerk * t ** 3 / 6;
+        time += t;
+        if (stopsHere) return { j, distance, time, limits };
+        velocity -= (a0 + a1) * duration / 2;
+      }
+    }
+    return { j, distance: distance + velocity ** 2 / (2 * j), time: time + velocity / j, limits };
+  }
+
+  return { g, positive, nonnegative, lockLimits, stop };
+})();
+
+const AXLE_NAMES = { front: '前轴', rear: '后轴', both: '前后轴同时' };
+
+const el = id => document.getElementById(id);
+function getN(id) { return el(id)?.valueAsNumber ?? NaN; }
+function fmt(value, digits = 2) { return Number.isFinite(value) ? value.toFixed(digits) : '—'; }
+
+function table(headers, rows) {
+  return `<table class="result-table"><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(row => `<tr>${row.map(v => `<td>${v}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+
+function lockText(q, lim) {
+  if (!Number.isFinite(q)) return '待核算制动能力';
+  if (lim.zRoad === 0) return '地面无可用附着';
+  if (q + 1e-9 < lim.zFirst) return '建压至上限，前后轴均未到极限';
+  return `${AXLE_NAMES[lim.first]}先到附着极限`;
+}
+
+const { g, positive, nonnegative } = BrakeModel;
+const DEFAULT_PARAMETERS = {
+  m0: 665, ma: 980, hg_empty: 510, hg_full: 530, front_empty: 40, front_full: 44,
+  L: 1940, re: 247.2, beta: 0.608, pressure: 6.9764486297,
+  v0: 50, phi: 0.7, tDelay: 0.1, tRamp: 0.3,
+};
+// 参考工具默认工况的单侧制动器力矩增益 K₁、K₂。
+const BRAKE_PRESETS = {
+  disc: { gainFront: 76.9181960251, gainRear: 47.9407038938 },
+  drum: { gainFront: 79.3880463562, gainRear: 182.0394728237 },
+};
+const PARAMETER_IDS = [...Object.keys(DEFAULT_PARAMETERS), 'gainFront', 'gainRear'];
+let design;
+let currentSimTab = 0;
+
+function readSimulation() {
+  const { m0, ma, hg_empty, hg_full, front_empty, front_full, L, re, beta: designBeta,
+    pressure, gainFront, gainRear, v0, phi, tDelay, tRamp } =
+    Object.fromEntries(PARAMETER_IDS.map(id => [id, getN(id)]));
+
+  if (!positive(m0, ma, hg_empty, hg_full, L) || ma < m0 ||
+      ![front_empty, front_full].every(share => share > 0 && share < 100)) {
+    return { error: '请检查质量、轴距和质心高度。满载质量应不小于空载，前轴荷占比需在 0% 与 100% 之间。' };
+  }
+  if (!nonnegative(phi) || phi > 2) return { error: '路面附着系数 φ 需在 0～2 之间。' };
+
+  const samePressure = el('pressureMode').value === 'equal';
+  const beta = samePressure ? gainFront / (gainFront + gainRear) : designBeta;
+  if (!(beta > 0 && beta < 1)) {
+    return { error: samePressure ? '请填写有效的前后轴单侧力矩增益。' : '制动力分配系数需满足 0 < β < 1。' };
+  }
+
+  const load = (mass, height, frontShare) => ({ G: mass * g, k: height / L, front: frontShare / 100 });
+  const empty = load(m0, hg_empty, front_empty);
+  const full = load(ma, hg_full, front_full);
+  const spec = { empty, full, phi, v0, tDelay, tRamp };
+  const performance = {
+    beta, syncEmpty: (beta - empty.front) / empty.k, syncFull: (beta - full.front) / full.k,
+  };
+  const result = { spec, performance };
+
+  if (!positive(re, gainFront, gainRear) || !nonnegative(pressure)) {
+    return { ...result, error: '请检查车轮有效半径、可用管压及前后轴单侧力矩增益。' };
+  }
+  if (!nonnegative(v0, tDelay, tRamp) || v0 > 500) {
+    return { ...result, error: '制动初速度需在 0～500 km/h 之间，延迟和建压时间需为非负数。' };
+  }
+
+  // 相对管压按固定 β 配置，压力最高的一轴系数为 1。
+  const scale = Math.max(beta / gainFront, (1 - beta) / gainRear);
+  const pRatio1 = beta / gainFront / scale;
+  const pRatio2 = (1 - beta) / gainRear / scale;
+  const T1 = pressure * pRatio1 * gainFront;
+  const T2 = pressure * pRatio2 * gainRear;
+  const qFor = load => 2 * (T1 + T2) / ((re / 1000) * load.G);
+  const emptyQ = qFor(empty);
+  const fullQ = qFor(full);
+  if (!nonnegative(emptyQ, fullQ)) return { ...result, error: '请输入有效范围内的制动系统参数。' };
+
+  return {
+    spec,
+    hyd: { pAvailable: pressure },
+    performance: {
+      ...performance, emptyQ, fullQ,
+      empty: BrakeModel.stop(empty, beta, phi, emptyQ, v0, tDelay, tRamp),
+      full: BrakeModel.stop(full, beta, phi, fullQ, v0, tDelay, tRamp),
+    },
+  };
+}
+
+function renderScenario() {
+  const { spec, performance, hyd, error } = design;
+  const loadName = el('simLoad').value === 'empty' ? '空载' : '满载';
+  el('simError').hidden = !error;
+  el('simError').textContent = error ?? '';
+  el('simScenario').hidden = !hyd;
+  el('simInputState').textContent = performance
+    ? 'β = ' + fmt(performance.beta, 3) + ' · 可用管压 ' + fmt(hyd?.pAvailable) + ' MPa · 距离曲线按' + loadName + '绘制'
+    : '请检查仿真参数';
+  if (!hyd) {
+    el('simulationCaseResults').innerHTML = '';
+    return;
+  }
+
+  el('simScenario').textContent = '统一校核工况　' + fmt(spec.v0, 1) + ' km/h，φ=' + fmt(spec.phi) +
+    '，延迟 ' + fmt(spec.tDelay) + ' s，建压 ' + fmt(spec.tRamp) + ' s';
+  const rows = [
+    ['满载', performance.full, performance.fullQ],
+    ['空载', performance.empty, performance.emptyQ],
+  ].map(([label, stop, q]) => [
+    label, fmt(stop.j), stop.distance == null ? '无有限制动距离' : fmt(stop.distance, 1) + ' m',
+    lockText(q, stop.limits),
+  ]);
+  el('simulationCaseResults').innerHTML =
+    table(['载荷', '稳态减速度（m/s²）', '含响应制动距离', '首轴附着状态'], rows);
+}
+
+function updateSimulation() {
+  el('beta').disabled = el('pressureMode').value === 'equal';
+  design = readSimulation();
+  renderScenario();
+  simDraw(currentSimTab);
+}
+
+function resetSimulation() {
+  const parameters = { ...DEFAULT_PARAMETERS, ...BRAKE_PRESETS[el('simPreset').value] };
+  Object.entries(parameters).forEach(([id, value]) => { el(id).value = value; });
+  el('pressureMode').value = 'matched';
+  el('simLoad').value = 'full';
+  simSpeeds.splice(0, simSpeeds.length, ...DEFAULT_SPEEDS);
+  simMus.splice(0, simMus.length, ...DEFAULT_MUS);
+  simRenderSpeedInputs();
+  simRenderMuInputs();
+  updateSimulation();
+}
+
+const SIM_COLORS = ['#00d4ff','#ff6b35','#39ff14','#ffd700','#ff4081'];
+const SIM_WORD_COLORS = ['#1565C0','#C62828','#2E7D32','#E65100','#6A1B9A'];
+
+class SimWordChart {
   constructor(ctx, W, H, opts={}) {
     this.ctx = ctx;
     this.W = W; this.H = H;
@@ -820,12 +657,12 @@ class WordChart {
     // Title at top
     if(title){
       ctx.fillStyle='#1a1a2e';
-      ctx.font='bold 18px "Noto Sans SC",SimHei,sans-serif';
+      ctx.font='bold 18px "Microsoft YaHei",SimHei,sans-serif';
       ctx.textAlign='center';
       ctx.fillText(title, W/2, 30);
       // Subtitle
       ctx.fillStyle='#555';
-      ctx.font='12px "Share Tech Mono",Courier,monospace';
+      ctx.font='12px monospace';
       ctx.fillText('广西大学 · 车辆工程专业 · 《汽车设计》课程教学团队', W/2, 46);
     }
 
@@ -849,7 +686,7 @@ class WordChart {
 
     // Tick labels
     ctx.fillStyle='#222222';
-    ctx.font='bold 13px "Share Tech Mono",Courier,monospace';
+    ctx.font='bold 13px monospace';
     ctx.textAlign='center';
     for(let x=xStart;x<=xmax+1e-9;x+=xTick){
       ctx.fillText(+x.toPrecision(4),this.px(x),H-padB+20);
@@ -866,7 +703,7 @@ class WordChart {
 
     // Axis titles
     ctx.fillStyle='#111111';
-    ctx.font='bold 15px "Noto Sans SC",SimHei,sans-serif';
+    ctx.font='bold 15px "Microsoft YaHei",SimHei,sans-serif';
     ctx.textAlign='center';
     ctx.fillText(xlabel,padL+(W-padL-padR)/2,H-padB+44);
     ctx.save();
@@ -920,7 +757,7 @@ class WordChart {
         ctx.moveTo(lx+10,y);ctx.lineTo(lx+44,y);
         ctx.stroke();ctx.setLineDash([]);
         ctx.fillStyle='#111111';
-        ctx.font='14px "Noto Sans SC",SimHei,sans-serif';
+        ctx.font='14px "Microsoft YaHei",SimHei,sans-serif';
         ctx.textAlign='left';
         ctx.fillText(item.label,lx+52,y+5);
       });
@@ -928,253 +765,7 @@ class WordChart {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-// DOWNLOAD CHART — redraws fresh on white for Word
-// ═══════════════════════════════════════════════════════════
-function downloadChart(canvasId, name) {
-  // Output at fixed high resolution for Word (e.g. ~3200×2000 px)
-  const DL_W = 3200, DL_H = 2000;
-  const offCanvas = document.createElement('canvas');
-  offCanvas.width = DL_W; offCanvas.height = DL_H;
-  const ctx = offCanvas.getContext('2d');
-
-  // Map canvasId → draw function for Word output
-  const drawFns = {
-    chart0: drawWordChart0,
-    chart1: drawWordChart1,
-    chart2: drawWordChart2,
-    chart3: drawWordChart3,
-    chart4: drawWordChart4,
-  };
-  if(drawFns[canvasId]) drawFns[canvasId](ctx, DL_W, DL_H, name);
-
-  const link = document.createElement('a');
-  link.download = name + '_广西大学车辆工程.png';
-  link.href = offCanvas.toDataURL('image/png');
-  link.click();
-}
-
-function drawWordChart0(ctx, W, H, title) {
-  const d = calcChart0();
-  const wc = new WordChart(ctx, W, H, {
-    xmin:0,xmax:15000,ymin:0,ymax:9000,
-    xlabel:'前制动器制动力 F₁ / N',
-    ylabel:'后制动器制动力 F₂ / N',
-    padL:100,padR:50,padT:60,padB:80
-  });
-  wc.addSeries(d.Fb1,d.Fb21,WORD_COLORS[1],[],  'I曲线（空载）',3);
-  wc.addSeries(d.Fb1,d.Fb22,WORD_COLORS[0],[],  'I曲线（满载）',3);
-  wc.addSeries(d.Fb1,d.Fb23,WORD_COLORS[2],[12,6],'β线（实际分配）',2.5);
-  wc.render([
-    {color:WORD_COLORS[1],dash:[],label:'I曲线（空载）'},
-    {color:WORD_COLORS[0],dash:[],label:'I曲线（满载）'},
-    {color:WORD_COLORS[2],dash:[12,6],label:'β线（实际分配）'},
-  ], title);
-}
-function drawWordChart1(ctx, W, H, title) {
-  const d = calcChart1();
-  const wc = new WordChart(ctx, W, H, {
-    xmin:0,xmax:1,ymin:0,ymax:2,
-    xlabel:'制动强度 z',ylabel:'利用附着系数 φ',
-    padL:100,padR:50,padT:60,padB:80
-  });
-  wc.addSeries(d.z,d.mf1,WORD_COLORS[0],[],     '前轴利用附着（空载）',3);
-  wc.addSeries(d.z,d.mr1,WORD_COLORS[0],[12,6],  '后轴利用附着（空载）',3);
-  wc.addSeries(d.z,d.mf2,WORD_COLORS[1],[],     '前轴利用附着（满载）',3);
-  wc.addSeries(d.z,d.mr2,WORD_COLORS[1],[12,6],  '后轴利用附着（满载）',3);
-  wc.render([
-    {color:WORD_COLORS[0],dash:[],   label:'前轴（空载）'},
-    {color:WORD_COLORS[0],dash:[12,6],label:'后轴（空载）'},
-    {color:WORD_COLORS[1],dash:[],   label:'前轴（满载）'},
-    {color:WORD_COLORS[1],dash:[12,6],label:'后轴（满载）'},
-  ], title);
-}
-function drawWordChart2(ctx, W, H, title) {
-  const d = calcChart2();
-  const wc = new WordChart(ctx, W, H, {
-    xmin:0,xmax:1,ymin:60,ymax:102,
-    xlabel:'附着系数 μ',ylabel:'制动效率 E / %',
-    padL:100,padR:50,padT:60,padB:80
-  });
-  wc.addSeries(d.mu,d.ef1,WORD_COLORS[0],[],     '前轴效率（空载）',3);
-  wc.addSeries(d.mu,d.er1,WORD_COLORS[0],[12,6],  '后轴效率（空载）',3);
-  wc.addSeries(d.mu,d.ef2,WORD_COLORS[1],[],     '前轴效率（满载）',3);
-  wc.addSeries(d.mu,d.er2,WORD_COLORS[1],[12,6],  '后轴效率（满载）',3);
-  wc.render([
-    {color:WORD_COLORS[0],dash:[],   label:'前轴效率（空载）'},
-    {color:WORD_COLORS[0],dash:[12,6],label:'后轴效率（空载）'},
-    {color:WORD_COLORS[1],dash:[],   label:'前轴效率（满载）'},
-    {color:WORD_COLORS[1],dash:[12,6],label:'后轴效率（满载）'},
-  ], title, 'bottomleft');
-}
-function drawWordChart3(ctx, W, H, title) {
-  const d = calcChart3(); const p = P.p3;
-  const allS=d.series.flat().filter(v=>v!==null&&v>0&&isFinite(v));
-  const ymax=Math.ceil(Math.max(...allS)/50)*50||300;
-  const wc = new WordChart(ctx, W, H, {
-    xmin:0.1,xmax:1,ymin:0,ymax:ymax,
-    xlabel:'附着系数 μ',ylabel:'制动距离 / m',
-    padL:100,padR:50,padT:60,padB:80
-  });
-  const dashes=[[],[12,6],[4,4],[8,3],[4,8],[2,4],[6,2,2,2],[10,4]];
-  d.series.forEach((s,i)=>{
-    wc.addSeries(d.mu,s,WORD_COLORS[i%WORD_COLORS.length],dashes[i%dashes.length],p.speeds[i]+' km/h',3);
-  });
-  const legend=p.speeds.map((u,i)=>({color:WORD_COLORS[i%WORD_COLORS.length],dash:dashes[i%dashes.length],label:u+' km/h'}));
-  wc.render(legend, title, 'topright');
-}
-function drawWordChart4(ctx, W, H, title) {
-  const d = calcChart4(); const p = P.p4;
-  const allS=d.series.flat().filter(v=>v!==null&&v>0&&isFinite(v));
-  const ymax=Math.ceil(Math.max(...allS)/20)*20||140;
-  const wc = new WordChart(ctx, W, H, {
-    xmin:0,xmax:100,ymin:0,ymax:ymax,
-    xlabel:'制动初速度 / (km/h)',ylabel:'制动距离 / m',
-    padL:100,padR:50,padT:60,padB:80
-  });
-  const dashes=[[],[12,6],[4,4],[8,3],[4,8],[2,4],[6,2,2,2],[10,4]];
-  d.series.forEach((s,i)=>{
-    wc.addSeries(d.u0,s,WORD_COLORS[i%WORD_COLORS.length],dashes[i%dashes.length],'μ = '+p.mus[i],3);
-  });
-  const legend=p.mus.map((mu,i)=>({color:WORD_COLORS[i%WORD_COLORS.length],dash:dashes[i%dashes.length],label:'μ = '+mu}));
-  wc.render(legend, title, 'topleft');
-}
-
-// ═══════════════════════════════════════════════════════════
-// PARAMETER STORES
-// ═══════════════════════════════════════════════════════════
-const DEF = {
-  p0: { m1:1520,g:9.8,h1:0.532,L:2.705,b1:1.623, m2:1910,h2:0.591,b2:1.217, bt:0.5625 },
-  p1: { h1:0.532,a1:1.082,b1:1.623,L:2.705, h2:0.591,a2:1.488,b2:1.217, bt:0.64 },
-  p2: { h1:0.532,a1:1.082,b1:1.623,L:2.705, h2:0.591,a2:1.488,b2:1.217, bt:0.64 },
-  p3: { h1:0.591,a:1.488,b:1.217,L:2.705,bt:0.64,g:9.8,t1:0.1,t2:0.3, speeds:[30,50,80] },
-  p4: { h1:0.591,a:1.488,b:1.217,L:2.705,bt:0.64,g:9.8,t1:0.1,t2:0.3, mus:[0.3,0.5,0.7] }
-};
-const P = {
-  p0:{...DEF.p0}, p1:{...DEF.p1}, p2:{...DEF.p2},
-  p3:{...DEF.p3, speeds:[...DEF.p3.speeds]},
-  p4:{...DEF.p4, mus:[...DEF.p4.mus]}
-};
-
-function fmtVal(v) {
-  if(Number.isInteger(v)) return String(v);
-  return parseFloat(v.toFixed(4)).toString();
-}
-
-function setP(k,v){if(isNaN(v))return;P.p0[k]=v;}
-function setP2(k,v){if(isNaN(v))return;P.p1[k]=v;}
-function setP3(k,v){if(isNaN(v))return;P.p2[k]=v;}
-function setP4(k,v){if(isNaN(v))return;P.p3[k]=v;}
-function setP5(k,v){if(isNaN(v))return;P.p4[k]=v;}
-function setSpeed(i,v){if(isNaN(v))return;P.p3.speeds[i]=v;}
-function setMu(i,v){if(isNaN(v))return;P.p4.mus[i]=v;}
-
-function resetParams(tab) {
-  const maps = ['p0','p1','p2','p3','p4'];
-  const key = maps[tab];
-  if(key==='p3') { P.p3={...DEF.p3,speeds:[...DEF.p3.speeds]}; renderSpeedInputs(); }
-  else if(key==='p4') { P.p4={...DEF.p4,mus:[...DEF.p4.mus]}; renderMuInputs(); }
-  else P[key] = {...DEF[key]};
-  syncDisplays(tab);
-  draw(tab);
-}
-
-function syncDisplays(tab) {
-  function fill(prefix, pobj, keys) {
-    keys.forEach(k => {
-      const el = document.getElementById(prefix + k);
-      if(el) el.value = fmtVal(pobj[k]);
-    });
-  }
-  if(tab===0) fill('n-', P.p0, ['m1','h1','b1','m2','h2','b2','L','bt']);
-  if(tab===1) fill('n2-', P.p1, ['h1','a1','b1','h2','a2','b2','L','bt']);
-  if(tab===2) fill('n3-', P.p2, ['h1','a1','b1','h2','a2','b2','L','bt']);
-  if(tab===3) {
-    fill('n4-', P.p3, ['h1','a','b','L','bt','t1','t2']);
-    renderSpeedInputs();
-  }
-  if(tab===4) {
-    fill('n5-', P.p4, ['h1','a','b','L','bt','t1','t2']);
-    renderMuInputs();
-  }
-}
-
-// ── Dynamic speed inputs (tab 3) ──
-function renderSpeedInputs() {
-  const container = document.getElementById('speed-inputs');
-  if(!container) return;
-  container.innerHTML = '';
-  P.p3.speeds.forEach((v,i) => {
-    const row = document.createElement('div');
-    row.className = 'param-row dyn-row';
-    row.innerHTML = `
-      <div class="param-label">
-        <span>速度 ${i+1}</span>
-        <span class="param-unit">km/h</span>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <input class="param-numbox" type="number" value="${fmtVal(v)}" step="5" min="1" max="500"
-          oninput="setSpeed(${i},+this.value);draw(3)">
-        ${P.p3.speeds.length>1?`<button class="dyn-del-btn" onclick="removeSpeed(${i})" title="删除">✕</button>`:''}
-      </div>`;
-    container.appendChild(row);
-  });
-}
-
-function addSpeed() {
-  if(P.p3.speeds.length>=8) return;
-  const last = P.p3.speeds[P.p3.speeds.length-1]||80;
-  P.p3.speeds.push(Math.min(last+20, 500));
-  renderSpeedInputs(); draw(3);
-}
-function removeSpeed(i) {
-  if(P.p3.speeds.length<=1) return;
-  P.p3.speeds.splice(i,1);
-  renderSpeedInputs(); draw(3);
-}
-
-// ── Dynamic mu inputs (tab 4) ──
-function renderMuInputs() {
-  const container = document.getElementById('mu-inputs');
-  if(!container) return;
-  container.innerHTML = '';
-  P.p4.mus.forEach((v,i) => {
-    const row = document.createElement('div');
-    row.className = 'param-row dyn-row';
-    row.innerHTML = `
-      <div class="param-label">
-        <span>μ${['₁','₂','₃','₄','₅','₆','₇','₈'][i]||' '+(i+1)}</span>
-        <span class="param-unit"></span>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <input class="param-numbox" type="number" value="${fmtVal(v)}" step="0.05" min="0.01" max="2"
-          oninput="setMu(${i},+this.value);draw(4)">
-        ${P.p4.mus.length>1?`<button class="dyn-del-btn" onclick="removeMu(${i})" title="删除">✕</button>`:''}
-      </div>`;
-    container.appendChild(row);
-  });
-}
-
-function addMu() {
-  if(P.p4.mus.length>=8) return;
-  const last = P.p4.mus[P.p4.mus.length-1]||0.7;
-  P.p4.mus.push(Math.min(+(last+0.1).toFixed(2), 2));
-  renderMuInputs(); draw(4);
-}
-function removeMu(i) {
-  if(P.p4.mus.length<=1) return;
-  P.p4.mus.splice(i,1);
-  renderMuInputs(); draw(4);
-}
-
-// ═══════════════════════════════════════════════════════════
-// CHARTING ENGINE
-// ═══════════════════════════════════════════════════════════
-const COLORS = ['#00d4ff','#ff6b35','#39ff14','#ffd700','#ff4081'];
-
-function linspace(a,b,n){const arr=[];for(let i=0;i<n;i++)arr.push(a+(b-a)*i/(n-1));return arr;}
-
-class Chart {
+class SimChart {
   constructor(canvasId, opts={}) {
     this.canvas = document.getElementById(canvasId);
     this.ctx = this.canvas.getContext('2d');
@@ -1184,18 +775,17 @@ class Chart {
       padL:80,padR:36,padT:28,padB:64
     }, opts);
     this.series = [];
-    this.resize();
   }
 
   resize() {
     const wrap = this.canvas.parentElement;
     const dpr = window.devicePixelRatio || 1;
-    const w = Math.max(wrap.clientWidth, 200);
-    const h = Math.max(wrap.clientHeight, 200);
+    const w = wrap.clientWidth;
+    const h = wrap.clientHeight;
+    this.opts.padL = w < 440 ? 58 : 80;
+    this.opts.padR = w < 440 ? 18 : 36;
     this.canvas.width  = w * dpr;
     this.canvas.height = h * dpr;
-    this.canvas.style.width  = w + 'px';
-    this.canvas.style.height = h + 'px';
     this.ctx.scale(dpr, dpr);
     this.W = w;
     this.H = h;
@@ -1253,7 +843,7 @@ class Chart {
 
     // Axis tick labels
     ctx.fillStyle = 'rgba(160,200,230,0.85)';
-    ctx.font = 'bold 13px "Share Tech Mono",monospace';
+    ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'center';
     for(let x=xStart;x<=xmax+1e-9;x+=xTick) {
       const px = this.px(x);
@@ -1274,7 +864,7 @@ class Chart {
 
     // Axis titles
     ctx.fillStyle = '#a8cce0';
-    ctx.font = 'bold 15px "Noto Sans SC",sans-serif';
+    ctx.font = 'bold 15px "Microsoft YaHei",sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(xlabel, padL+(W-padL-padR)/2, H-padB+44);
     ctx.save();
@@ -1310,9 +900,10 @@ class Chart {
     // Legend — position controlled by legendPos
     const items = legendItems || this.series.filter(s=>s.label);
     if(items.length) {
-      const lineH = 26;
-      const boxW = 210, boxH = items.length*lineH+16;
-      const margin = 14;
+      const lineH = 24;
+      const margin = 12;
+      const boxW = Math.min(210, W - padL - padR - 2 * margin);
+      const boxH = items.length * lineH + 16;
       let lx, ly;
       if(legendPos==='topleft')     { lx=padL+margin;           ly=padT+margin; }
       else if(legendPos==='topright')    { lx=W-padR-boxW-margin;    ly=padT+margin; }
@@ -1327,7 +918,7 @@ class Chart {
       ctx.roundRect(lx,ly,boxW,boxH,5);
       ctx.fill(); ctx.stroke();
       items.forEach((item,i) => {
-        const y = ly+12+i*lineH+lineH/2;
+        const y = ly + 8 + i * lineH + lineH / 2;
         ctx.beginPath();
         ctx.strokeStyle = item.color;
         ctx.lineWidth = 3;
@@ -1335,352 +926,223 @@ class Chart {
         ctx.moveTo(lx+10,y); ctx.lineTo(lx+40,y);
         ctx.stroke(); ctx.setLineDash([]);
         ctx.fillStyle = '#ddeaf8';
-        ctx.font = '14px "Noto Sans SC",sans-serif';
+        ctx.font = '14px "Microsoft YaHei",sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(item.label, lx+48, y+5);
+        ctx.fillText(item.label, lx+48, y+5, boxW-56);
       });
     }
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-// SIMULATION FUNCTIONS
-// ═══════════════════════════════════════════════════════════
+const DEFAULT_SPEEDS = [30, 50, 70, 90];
+const simSpeeds = DEFAULT_SPEEDS.slice();
+const DEFAULT_MUS = [0.3, 0.5, 0.7, 0.9];
+const simMus = DEFAULT_MUS.slice();
+const lineDashes = [[], [10, 6], [3, 4], [15, 5, 3, 5], [], [8, 4], [3, 3], [12, 4, 3, 4]];
+const sequence = (start, end, count = 151) =>
+  Array.from({ length: count }, (_, i) => start + (end - start) * i / (count - 1));
 
-function calcChart0() {
-  const {m1,g,h1,L,b1,m2,h2,b2,bt} = P.p0;
-  const Fb1 = linspace(0,15000,300);
-  const Fb21 = Fb1.map(f => {
-    const v = 0.5*(m1*g/h1*Math.sqrt(b1*b1+4*L*h1/(m1*g)*f)-(m1*g*b1/h1+2*f));
-    return v>=0?v:null;
-  });
-  const Fb22 = Fb1.map(f => {
-    const v = 0.5*(m2*g/h2*Math.sqrt(b2*b2+4*L*h2/(m2*g)*f)-(m2*g*b2/h2+2*f));
-    return v>=0?v:null;
-  });
-  const Fb23 = Fb1.map(f => bt*f);
-  return { Fb1, Fb21, Fb22, Fb23 };
+function simRenderValues(values, name, container, step, min, max) {
+  el(container).innerHTML = values.map((v, i) => `<div class="sim-param-row">
+    <label class="sim-param-label" for="${name}${i}">${name === 'speed' ? '速度（km/h）' : '附着系数'} ${i + 1}</label>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input id="${name}${i}" class="sim-param-numbox" type="number" value="${Number.isFinite(v) ? v : ''}"
+        step="${step}" min="${min}" max="${max}" oninput="simSetValue('${name}',${i},this.valueAsNumber)">
+      ${values.length > 1 ? `<button type="button" class="sim-dyn-del-btn" aria-label="移除第 ${i + 1} 条曲线" onclick="simRemoveValue('${name}',${i})">✕</button>` : ''}
+    </div></div>`).join('');
+}
+function simRenderSpeedInputs() {
+  simRenderValues(simSpeeds, 'speed', 'sim-speed-inputs', 1, 0, 500);
+  el('sim-add-speed').disabled = simSpeeds.length >= 8;
+}
+function simRenderMuInputs() {
+  simRenderValues(simMus, 'mu', 'sim-mu-inputs', 0.01, 0, 2);
+  el('sim-add-mu').disabled = simMus.length >= 8;
+}
+function simSetValue(kind, i, value) {
+  (kind === 'speed' ? simSpeeds : simMus)[i] = value;
+  simDraw(currentSimTab);
+}
+function simRemoveValue(kind, i) {
+  const values = kind === 'speed' ? simSpeeds : simMus;
+  if (values.length <= 1) return;
+  values.splice(i, 1);
+  if (kind === 'speed') simRenderSpeedInputs(); else simRenderMuInputs();
+  simDraw(currentSimTab);
+}
+function simAddSpeed() {
+  if (simSpeeds.length >= 8) return;
+  simSpeeds.push(Math.min((simSpeeds.filter(Number.isFinite).at(-1) ?? 60) + 20, 500));
+  simRenderSpeedInputs();
+  simDraw(currentSimTab);
+}
+function simAddMu() {
+  if (simMus.length >= 8) return;
+  simMus.push(Math.min(+((simMus.filter(Number.isFinite).at(-1) ?? 0.6) + 0.1).toFixed(2), 2));
+  simRenderMuInputs();
+  simDraw(currentSimTab);
 }
 
-function calcChart1() {
-  const {h1,a1,b1,h2,a2,b2,L,bt} = P.p1;
-  const z = linspace(0,1,200);
-  const mf1 = z.map(v => bt*L*v/(b1+h1*v));
-  const mr1 = z.map(v => {const d=a1-h1*v;return d>0?(1-bt)*L*v/d:null;});
-  const mf2 = z.map(v => bt*L*v/(b2+h2*v));
-  const mr2 = z.map(v => {const d=a2-h2*v;return d>0?(1-bt)*L*v/d:null;});
-  return {z,mf1,mr1,mf2,mr2};
+function forceGraph(spec, p) {
+  const ideal = (load, name, palette) => {
+    const z = sequence(0, Math.min((1 - load.front) / load.k, Math.max(1, spec.phi)));
+    return { x: z.map(v => load.G * v * (load.front + load.k * v)),
+      y: z.map(v => load.G * v * Math.max(0, 1 - load.front - load.k * v)), name, palette };
+  };
+  const force = spec.full.G * Math.max(1, spec.phi);
+  const slope = { x: [0, p.beta * force], y: [0, (1 - p.beta) * force], name: 'β 线（制动器指令）', palette: 1, dash: [10, 6] };
+  const series = [ideal(spec.empty, 'I 曲线（空载）', 2), ideal(spec.full, 'I 曲线（满载）', 0), slope];
+  return {
+    series, xmax: Math.ceil(Math.max(...series.flatMap(v => v.x)) / 1000) * 1000,
+    ymax: Math.ceil(Math.max(...series.flatMap(v => v.y)) / 1000) * 1000,
+    xLabel: '前轴制动器制动力 F₁ / N', yLabel: '后轴制动器制动力 F₂ / N',
+    note: `F₂ = [(1−β)/β]F₁。当前斜率 ${fmt((1 - p.beta) / p.beta, 4)}；空载与满载 φ₀ 为 ${fmt(p.syncEmpty, 3)} / ${fmt(p.syncFull, 3)}。`,
+    legend: 'topright',
+  };
 }
 
-function calcChart2() {
-  const {h1,a1,b1,h2,a2,b2,L,bt} = P.p2;
-  const mu = linspace(0,1,200);
-  const clip = v => (v>100||v<0)?NaN:v;
-  const ef1 = mu.map(m=>{const d=L*bt-m*h1;return d>0?clip(b1/d*100):NaN;});
-  const er1 = mu.map(m=>{const d=L-L*bt+m*h1;return d>0?clip(a1/d*100):NaN;});
-  const ef2 = mu.map(m=>{const d=L*bt-m*h2;return d>0?clip(b2/d*100):NaN;});
-  const er2 = mu.map(m=>{const d=L-L*bt+m*h2;return d>0?clip(a2/d*100):NaN;});
-  const mu0_1 = L*(a1*bt-b1*(1-bt))/(h1*(a1+b1));
-  const mu0_2 = L*(a2*bt-b2*(1-bt))/(h2*(a2+b2));
-  return {mu, ef1, er1, ef2, er2, mu0_1, mu0_2};
-}
-
-function calcBrakingDist(mu_arr, u0_kmh, p) {
-  const {h1:h,L,a,b,bt,g,t1,t2} = p;
-  const mu0 = (L*bt-b)/h;
-  return mu_arr.map(mu => {
-    let t2p, ux, s1;
-    if(mu < mu0) {
-      const denom = bt*(a-h*mu);
-      if(denom<=0) return null;
-      t2p = (1-bt)*(b+h*mu)*t2/denom;
-      if(t2p<0||t2p>t2) t2p=Math.min(t2,Math.max(0,t2p));
-      const Lmh = L-h*mu;
-      if(Lmh<=0) return null;
-      ux = u0_kmh/3.6 - g*mu0*(t2p*t2p)/(2*t2)
-           - g*b*mu*(t2-t2p)/Lmh
-           - g*L*mu0*(1-bt)*(t2*t2-t2p*t2p)/(2*Lmh*t2);
-      if(ux<0) ux=0;
-      s1 = u0_kmh*(t1+t2)/3.6
-           - g*mu0*(t2p*t2p)*(1-2*t2p/(3*t2))/2
-           - g*b*mu*(t2-t2p)*(t2-t2p)/(2*Lmh)
-           - g*L*mu0*(1-bt)*(t2*t2*t2-3*t2*t2p*t2p+2*t2p*t2p*t2p)/(6*Lmh*t2)
-           + ux*ux/(2*g*mu);
-    } else if(mu===mu0) {
-      const ux2 = u0_kmh/3.6 - g*mu0*t2/2;
-      s1 = u0_kmh*(t1+t2)/3.6 - g*mu0*t2*t2/6 + Math.max(0,ux2)*Math.max(0,ux2)/(2*g*mu);
-    } else {
-      const denom = (1-bt)*(b+h*mu);
-      if(denom<=0) return null;
-      t2p = bt*(a-h*mu)*t2/denom;
-      if(t2p<0||t2p>t2) t2p=Math.min(t2,Math.max(0,t2p));
-      const Lph = L+h*mu;
-      ux = u0_kmh/3.6 - g*mu0*(t2p*t2p)/(2*t2)
-           - g*a*mu*(t2-t2p)/Lph
-           - g*L*mu0*bt*(t2*t2-t2p*t2p)/(2*Lph*t2);
-      if(ux<0) ux=0;
-      s1 = u0_kmh*(t1+t2)/3.6
-           - g*mu0*(t2p*t2p)*(1-2*t2p/(3*t2))/2
-           - g*a*mu*(t2-t2p)*(t2-t2p)/(2*Lph)
-           - g*L*mu0*bt*(t2*t2*t2-3*t2*t2p*t2p+2*t2p*t2p*t2p)/(6*Lph*t2)
-           + ux*ux/(2*g*mu);
-    }
-    return s1>0?s1:null;
-  });
-}
-
-function calcChart3() {
-  const p = P.p3;
-  const mu = linspace(0.1,1,180);
-  const series = p.speeds.map(u => calcBrakingDist(mu, u, p));
-  return {mu, series};
-}
-
-function calcBrakingDistVsSpeed(u0_arr, mu_val, p) {
-  const {h1:h,L,a,b,bt,g,t1,t2} = p;
-  const mu0 = (L*bt-b)/h;
-  let t2p;
-  if(mu_val < mu0) {
-    const denom = bt*(a-h*mu_val);
-    t2p = denom>0 ? (1-bt)*(b+h*mu_val)*t2/denom : t2;
-  } else {
-    const denom = (1-bt)*(b+h*mu_val);
-    t2p = denom>0 ? bt*(a-h*mu_val)*t2/denom : 0;
+function utilizedAdhesionGraph(spec, p) {
+  const hi = Math.max(1, spec.phi);
+  const z = sequence(0, hi);
+  const series = [];
+  for (const [load, title, palette] of [[spec.empty, '空载', 2], [spec.full, '满载', 0]]) {
+    const front = z.map(q => p.beta * q / (load.front + load.k * q));
+    const rear = z.map(q => {
+      const normal = 1 - load.front - load.k * q;
+      return normal > 0 && (1 - p.beta) * q / normal <= hi * 1.45 ? (1 - p.beta) * q / normal : null;
+    });
+    series.push({ x: z, y: front, name: title + '前轴', palette },
+      { x: z, y: rear, name: title + '后轴', palette, dash: [10, 6] });
   }
-  t2p = Math.min(t2,Math.max(0,t2p));
+  series.push({ x: [0, hi], y: [0, hi], name: '两轴理想 φ=z', palette: 4, dash: [3, 4] });
+  return { series, xmax: hi, ymax: hi * 1.45, xLabel: '制动强度 z = j/g', yLabel: '所需附着系数',
+    note: '沿固定 β 提高制动强度，两轴所需附着系数越大的一轴越早到达同一路面的附着上限。', legend: 'topleft' };
+}
 
-  return u0_arr.map(u0 => {
-    let s1;
-    if(mu_val < mu0) {
-      const Lmh = L-h*mu_val;
-      if(Lmh<=0) return null;
-      const ux = Math.max(0, u0/3.6 - g*mu0*(t2p*t2p)/(2*t2)
-           - g*b*mu_val*(t2-t2p)/Lmh
-           - g*L*mu0*(1-bt)*(t2*t2-t2p*t2p)/(2*Lmh*t2));
-      s1 = u0*(t1+t2)/3.6
-           - g*mu0*(t2p*t2p)*(1-2*t2p/(3*t2))/2
-           - g*b*mu_val*(t2-t2p)*(t2-t2p)/(2*Lmh)
-           - g*L*mu0*(1-bt)*(t2*t2*t2-3*t2*t2p*t2p+2*t2p*t2p*t2p)/(6*Lmh*t2)
-           + ux*ux/(2*g*mu_val);
-    } else {
-      const Lph = L+h*mu_val;
-      if(Lph<=0) return null;
-      const ux = Math.max(0, u0/3.6 - g*mu0*(t2p*t2p)/(2*t2)
-           - g*a*mu_val*(t2-t2p)/Lph
-           - g*L*mu0*bt*(t2*t2-t2p*t2p)/(2*Lph*t2));
-      s1 = u0*(t1+t2)/3.6
-           - g*mu0*(t2p*t2p)*(1-2*t2p/(3*t2))/2
-           - g*a*mu_val*(t2-t2p)*(t2-t2p)/(2*Lph)
-           - g*L*mu0*bt*(t2*t2*t2-3*t2*t2p*t2p+2*t2p*t2p*t2p)/(6*Lph*t2)
-           + ux*ux/(2*g*mu_val);
-    }
-    return s1>0?s1:null;
+function efficiencyGraph(spec, p) {
+  const hi = Math.max(1, spec.phi);
+  const mu = sequence(0.02, hi);
+  const series = [];
+  for (const [load, title, q, palette] of [[spec.empty, '空载', p.emptyQ, 2], [spec.full, '满载', p.fullQ, 0]]) {
+    const first = mu.map(v => BrakeModel.lockLimits(load, p.beta, v).zFirst);
+    series.push({ x: mu, y: first.map((z, i) => z / mu[i] * 100), name: title + '分配上限', palette });
+    if (Number.isFinite(q)) series.push({ x: mu, y: first.map((z, i) => Math.min(z, q) / mu[i] * 100),
+      name: title + '含液压约束', palette, dash: [10, 6] });
+  }
+  return { series, xmin: 0, xmax: hi, ymax: 105, xLabel: '路面附着系数 φ', yLabel: '首轴达限前的附着利用率 / %',
+    note: '实线为仅由轴荷与 β 决定的首轴达限强度与 φ 之比。虚线进一步计入可用液压的限制。', legend: 'bottomleft' };
+}
+
+function distanceGraph(index, spec, p) {
+  const isEmpty = el('simLoad').value === 'empty';
+  const load = isEmpty ? spec.empty : spec.full;
+  const q = isEmpty ? p.emptyQ : p.fullQ;
+  if (!Number.isFinite(q)) return null;
+  const byAdhesion = index === 3;
+  const values = (byAdhesion ? simSpeeds : simMus).filter(v => v >= 0 && v <= (byAdhesion ? 500 : 2));
+  if (!values.length) return null;
+  const xmin = byAdhesion ? 0.1 : 0;
+  const xmax = byAdhesion ? Math.max(1, spec.phi) : Math.max(100, Math.ceil(spec.v0 / 10) * 10);
+  const x = sequence(xmin, xmax);
+  const series = values.map((value, i) => ({
+    x, y: x.map(v => BrakeModel.stop(load, p.beta, byAdhesion ? v : value, q, byAdhesion ? value : v,
+      spec.tDelay, spec.tRamp).distance),
+    name: byAdhesion ? value + ' km/h' : 'φ = ' + value, palette: i, dash: lineDashes[i],
+  }));
+  const distances = series.flatMap(v => v.y).filter(Number.isFinite);
+  return { series, xmin, xmax, ymax: Math.max(10, Math.ceil(Math.max(0, ...distances) / 10) * 10),
+    xLabel: byAdhesion ? '路面附着系数 φ' : '制动初速度 / (km/h)', yLabel: '制动距离 / m',
+    note: `${isEmpty ? '空载' : '满载'}；β=${fmt(p.beta, 3)}；可用管压 ${fmt(design.hyd.pAvailable)} MPa。
+      ${!byAdhesion && values.includes(0) ? 'φ=0 时车辆从非零初速无法制停。' : '两张距离图使用同一制动模型。'}`,
+    legend: 'topleft' };
+}
+
+function graphData(index) {
+  const { spec, performance: p } = design;
+  if (!p) return null;
+  if (index === 0) return forceGraph(spec, p);
+  if (index === 1) return utilizedAdhesionGraph(spec, p);
+  if (index === 2) return efficiencyGraph(spec, p);
+  return distanceGraph(index, spec, p);
+}
+
+function renderGraph(chart, graph, colors, title) {
+  for (const series of graph.series) {
+    chart.addSeries(series.x, series.y, colors[series.palette % colors.length], series.dash ?? [], series.name, title ? 3 : 2.5);
+  }
+  if (chart instanceof SimWordChart) chart.render(null, title, graph.legend);
+  else chart.render(null, graph.legend);
+}
+
+function graphOptions(graph) {
+  return { xmin: graph.xmin ?? 0, xmax: graph.xmax, ymin: 0, ymax: graph.ymax,
+    xlabel: graph.xLabel, ylabel: graph.yLabel };
+}
+
+function simDraw(index) {
+  const graph = graphData(index);
+  const panel = el('sim-panel-' + index);
+  const canvas = el('sim-chart' + index);
+  const downloadButton = panel.querySelector('.sim-dl-btn');
+  downloadButton.disabled = !graph;
+  if (!graph) {
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    el('sim-info' + index).textContent = design.error || '请至少输入一条曲线的有效速度或附着系数。';
+    return;
+  }
+  renderGraph(new SimChart(canvas.id, graphOptions(graph)), graph, SIM_COLORS);
+  el('sim-info' + index).textContent = graph.note;
+}
+
+function simSwitchTab(index) {
+  currentSimTab = index;
+  document.querySelectorAll('.sim-tab-btn').forEach((button, i) => {
+    button.classList.toggle('active', i === index);
+    button.setAttribute('aria-pressed', String(i === index));
   });
-}
-
-function calcChart4() {
-  const p = P.p4;
-  const u0 = linspace(0,100,200);
-  const series = p.mus.map(mu => calcBrakingDistVsSpeed(u0, mu, p));
-  return {u0, series};
-}
-
-// ═══════════════════════════════════════════════════════════
-// DRAW FUNCTIONS
-// ═══════════════════════════════════════════════════════════
-function draw(tab) {
-  if(tab===0) drawChart0();
-  if(tab===1) drawChart1();
-  if(tab===2) drawChart2();
-  if(tab===3) drawChart3();
-  if(tab===4) drawChart4();
-}
-
-function drawChart0() {
-  const d = calcChart0();
-  const chart = new Chart('chart0',{
-    xmin:0,xmax:15000,ymin:0,ymax:9000,
-    xlabel:'前制动器制动力 F₁ / N',
-    ylabel:'后制动器制动力 F₂ / N',
-    padL:88,padR:36,padT:28,padB:80
+  document.querySelectorAll('.sim-chart-panel').forEach((panel, i) => {
+    panel.classList.toggle('active', i === index);
   });
-  chart.addSeries(d.Fb1,d.Fb21,COLORS[1],[],  'I曲线（空载）',3);
-  chart.addSeries(d.Fb1,d.Fb22,COLORS[0],[],  'I曲线（满载）',3);
-  chart.addSeries(d.Fb1,d.Fb23,COLORS[2],[6,4],'β线（实际分配）',2.5);
-  const legend=[
-    {color:COLORS[1],dash:[],label:'I曲线（空载）'},
-    {color:COLORS[0],dash:[],label:'I曲线（满载）'},
-    {color:COLORS[2],dash:[6,4],label:'β线（实际分配）'},
-  ];
-  chart.render(legend);
-  const p=P.p0;
-  const mu0_1=(p.L*p.bt-p.b1)/p.h1;
-  const mu0_2=(p.L*p.bt-p.b2)/p.h2;
-  document.getElementById('info0').innerHTML =
-    infoCard('#ff6b35','空载同步附着系数','μ₀ = '+mu0_1.toFixed(4))+
-    infoCard('#00d4ff','满载同步附着系数','μ₀ = '+mu0_2.toFixed(4))+
-    infoCard('#39ff14','β 线斜率',p.bt.toFixed(4));
+  el('sim-params-3').hidden = index !== 3;
+  el('sim-params-4').hidden = index !== 4;
+  simDraw(index);
 }
 
-function drawChart1() {
-  const d = calcChart1();
-  const chart = new Chart('chart1',{
-    xmin:0,xmax:1,ymin:0,ymax:2,
-    xlabel:'制动强度 z',
-    ylabel:'利用附着系数 φ',
-    padL:76,padR:36,padT:28,padB:80
-  });
-  chart.addSeries(d.z,d.mf1,COLORS[0],[],     '前轴利用附着（空载）',3);
-  chart.addSeries(d.z,d.mr1,COLORS[0],[6,4],  '后轴利用附着（空载）',3);
-  chart.addSeries(d.z,d.mf2,COLORS[1],[],     '前轴利用附着（满载）',3);
-  chart.addSeries(d.z,d.mr2,COLORS[1],[6,4],  '后轴利用附着（满载）',3);
-  const legend=[
-    {color:COLORS[0],dash:[],    label:'前轴（空载）'},
-    {color:COLORS[0],dash:[6,4], label:'后轴（空载）'},
-    {color:COLORS[1],dash:[],    label:'前轴（满载）'},
-    {color:COLORS[1],dash:[6,4], label:'后轴（满载）'},
-  ];
-  chart.render(legend);
-  const p=P.p1;
-  document.getElementById('info1').innerHTML =
-    infoCard('#00d4ff','分配系数 β','β = '+p.bt.toFixed(3))+
-    infoCard('#ff6b35','满载前轴距 a₂',p.a2.toFixed(3)+' m')+
-    infoCard('#39ff14','满载后轴距 b₂',p.b2.toFixed(3)+' m');
+function simDownloadChart(id, name) {
+  const graph = graphData(Number(id.at(-1)));
+  if (!graph) {
+    alert('请先补齐参数并生成曲线。');
+    return;
+  }
+  const canvas = document.createElement('canvas');
+  const width = 1600, height = 1000;
+  canvas.width = 2 * width;
+  canvas.height = 2 * height;
+  const context = canvas.getContext('2d');
+  context.scale(2, 2);
+  const chart = new SimWordChart(context, width, height,
+    { ...graphOptions(graph), padL: 100, padR: 50, padT: 80, padB: 82 });
+  renderGraph(chart, graph, SIM_WORD_COLORS, name);
+  context.fillStyle = '#343e4d';
+  context.textAlign = 'center';
+  context.font = '14px "Microsoft YaHei", sans-serif';
+  context.fillText(graph.note, width / 2, height - 14, width - 40);
+  const link = document.createElement('a');
+  link.download = name + '_广西大学车辆工程.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
 }
 
-function drawChart2() {
-  const d = calcChart2();
-  const chart = new Chart('chart2',{
-    xmin:0,xmax:1,ymin:60,ymax:102,
-    xlabel:'附着系数 μ',
-    ylabel:'制动效率 E / %',
-    padL:76,padR:36,padT:28,padB:80
-  });
-  chart.addSeries(d.mu,d.ef1,COLORS[0],[],     '前轴（空载）',3);
-  chart.addSeries(d.mu,d.er1,COLORS[0],[6,4],  '后轴（空载）',3);
-  chart.addSeries(d.mu,d.ef2,COLORS[1],[],     '前轴（满载）',3);
-  chart.addSeries(d.mu,d.er2,COLORS[1],[6,4],  '后轴（满载）',3);
-  const legend=[
-    {color:COLORS[0],dash:[],    label:'前轴效率（空载）'},
-    {color:COLORS[0],dash:[6,4], label:'后轴效率（空载）'},
-    {color:COLORS[1],dash:[],    label:'前轴效率（满载）'},
-    {color:COLORS[1],dash:[6,4], label:'后轴效率（满载）'},
-  ];
-  chart.render(legend, 'bottomleft');
-  document.getElementById('info2').innerHTML =
-    infoCard('#00d4ff','空载同步附着系数','μ₀ = '+(isFinite(d.mu0_1)?d.mu0_1.toFixed(4):'—'))+
-    infoCard('#ff6b35','满载同步附着系数','μ₀ = '+(isFinite(d.mu0_2)?d.mu0_2.toFixed(4):'—'));
-}
-
-function drawChart3() {
-  const d = calcChart3();
-  const p = P.p3;
-  const mu0 = (p.L*p.bt-p.b)/p.h1;
-  const allS = d.series.flat().filter(v=>v!==null&&v>0&&isFinite(v));
-  const ymax = Math.ceil(Math.max(...allS)/50)*50 || 300;
-  const chart = new Chart('chart3',{
-    xmin:0.1,xmax:1,ymin:0,ymax:ymax,
-    xlabel:'附着系数 μ',
-    ylabel:'制动距离 / m',
-    padL:76,padR:36,padT:28,padB:80
-  });
-  const dashes=[[],[6,4],[3,3],[8,3],[4,8],[2,4],[6,2,2,2],[10,4]];
-  d.series.forEach((s,i)=>{
-    chart.addSeries(d.mu,s,COLORS[i%COLORS.length],dashes[i%dashes.length],p.speeds[i]+' km/h',3);
-  });
-  const legend=p.speeds.map((u,i)=>({color:COLORS[i%COLORS.length],dash:dashes[i%dashes.length],label:u+' km/h'}));
-  chart.render(legend,'topright');
-  document.getElementById('info3').innerHTML =
-    infoCard('#39ff14','同步附着系数','μ₀ = '+mu0.toFixed(4))+
-    infoCard('#00d4ff','反应时间 t₁',p.t1.toFixed(2)+' s')+
-    infoCard('#ff6b35','制动增长时间 t₂',p.t2.toFixed(2)+' s');
-}
-
-function drawChart4() {
-  const d = calcChart4();
-  const p = P.p4;
-  const allS = d.series.flat().filter(v=>v!==null&&v>0&&isFinite(v));
-  const ymax = Math.ceil(Math.max(...allS)/20)*20 || 140;
-  const chart = new Chart('chart4',{
-    xmin:0,xmax:100,ymin:0,ymax:ymax,
-    xlabel:'制动初速度 / (km/h)',
-    ylabel:'制动距离 / m',
-    padL:76,padR:36,padT:28,padB:80
-  });
-  const dashes=[[],[6,4],[3,3],[8,3],[4,8],[2,4],[6,2,2,2],[10,4]];
-  d.series.forEach((s,i)=>{
-    chart.addSeries(d.u0,s,COLORS[i%COLORS.length],dashes[i%dashes.length],'μ = '+p.mus[i],3);
-  });
-  const legend=p.mus.map((mu,i)=>({color:COLORS[i%COLORS.length],dash:dashes[i%dashes.length],label:'μ = '+mu}));
-  chart.render(legend,'topleft');
-  const mu0 = (p.L*p.bt-p.b)/p.h1;
-  document.getElementById('info4').innerHTML =
-    infoCard('#39ff14','同步附着系数','μ₀ = '+mu0.toFixed(4))+
-    infoCard('#00d4ff','分配系数 β',p.bt.toFixed(3))+
-    infoCard('#ffd700','最大仿真速度','100 km/h');
-}
-
-function infoCard(color, label, val) {
-  return `<div class="info-card">
-    <div class="info-card-dot" style="background:${color}"></div>
-    <span class="info-card-text">${label}：</span>
-    <span class="info-card-val">${val}</span>
-  </div>`;
-}
-
-// ═══════════════════════════════════════════════════════════
-// TAB SWITCHING
-// ═══════════════════════════════════════════════════════════
-function switchTab(idx) {
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
-  document.querySelectorAll('.chart-panel').forEach((p,i)=>p.classList.toggle('active',i===idx));
-  document.querySelectorAll('.param-section').forEach((p,i)=>p.style.display=i===idx?'block':'none');
-  setTimeout(()=>draw(idx),10);
-}
-
-// ═══════════════════════════════════════════════════════════
-// RESIZE HANDLER
-// ═══════════════════════════════════════════════════════════
-let resizeTimer;
-window.addEventListener('resize', ()=>{
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(()=>{
-    const active = [...document.querySelectorAll('.tab-btn')].findIndex(b=>b.classList.contains('active'));
-    draw(active);
-  }, 100);
+el('sim-parameters').addEventListener('input', updateSimulation);
+el('simPreset').addEventListener('change', resetSimulation);
+el('simReset').addEventListener('click', resetSimulation);
+el('simLoad').addEventListener('change', () => {
+  renderScenario();
+  simDraw(currentSimTab);
 });
-
-// ═══════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════
-window.addEventListener('load', () => {
-  syncDisplays(0);
-  renderSpeedInputs();
-  renderMuInputs();
-  draw(0);
-});
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', e => {
-if (e.key === 'F12' || 
-(e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-(e.ctrlKey && e.key === 'U') ||
-(e.ctrlKey && e.key === 'S')) {
-e.preventDefault();
-return false;
-}
-});
-</script>
-<script>
-  document.addEventListener('contextmenu', e => e.preventDefault());
-  document.addEventListener('keydown', e => {
-    if (e.key === 'F12' || 
-        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-        (e.ctrlKey && e.key === 'U') ||
-        (e.ctrlKey && e.key === 'S')) {
-      e.preventDefault();
-      return false;
-    }
-  });
+window.addEventListener('resize', () => simDraw(currentSimTab));
+if (window.matchMedia('(max-width: 760px)').matches) el('sim-settings').open = false;
+resetSimulation();
 </script>
 </body>
 </html>
